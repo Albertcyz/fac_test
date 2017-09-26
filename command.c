@@ -11,6 +11,19 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include "wifi.h"
+
+cmd_tbl_list gobal_cmd_list;
+//static char cmd_from_input[MAXINPUTCHAR];
+pares_cmd_tbl gobal_pares_cmd_argv;
+char *mac_before_cmd = NULL;
+char cmd_from_input[MAXINPUTCHAR];
+
+char udp_buf[1024];
+
+char local_ip[50] = {0};
+char local_mac[50] = {0};
+
 
 int cmd_help(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
@@ -53,6 +66,8 @@ void cmd_init(void)
 	add_to_cmd_list("get_zig_temp", 2, get_zig_temperature, "Get zigbee temperature.");
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
+	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
+	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
 }
 
 int get_cmd_from_uart(char *buf, int count)
@@ -128,39 +143,7 @@ int run_cmd(cmd_tbl_s *_cmd, pares_cmd_tbl *_argv)
 	return 0;
 }
 
-#if 0
-void *key_exit(void *)
-{
-	int fd;
-	struct input_event key;
-	int time_old, time_new, key_count= 0;
-	fd = open(BUTTON_PATH, O_RDONLY | O_SYNC);
-	if(fd == -1){
-		perror("key_exit!\n");
-		//return -1;
-	}
-	while(1){
-		if(read(fd, &key, sizeof(key)) == sizeof(key)){
-			if(key.type == EV_KEY && key.value == 1){
-				if(key_count == 0)
-					time_old = time_new = key.time.tv_sec;
-			}
-			if(key.type == EV_KEY && key.value == 0){
-				key_count++;
-				if(key_count == 3)
-					time_new = key.time.tv_sec;
-			}
-		}
-		if(time_new-time_old > 1 && key_count !=0)
-			time_new = time_old = key_count = 0;
-		if(time_new-time_old <= 2 && key_count == 3){
-			printf("\nKey count : %d \nExit the test\n", key_count);
-			exit(0);
-		}
-	}
-}
-#endif
-
+//Exit the pcba test or product test
 void *key_exit(void *arg)
 {
 	int fd;
@@ -191,21 +174,6 @@ void *key_exit(void *arg)
 				}
 			}
 		}
-		#if 0
-		if(read(fd, &key, sizeof(key)) == sizeof(key) && _time.end()){
-			printf("key release\n");
-			close(fd);
-			fd = open(BUTTON_PATH, O_RDONLY | O_SYNC);
-		}
-		if(read(fd, &key, sizeof(key)) < 0 && ! _time.end()){
-			if(key.type == EV_KEY && key.value == 1){
-				close(fd);
-				printf("Exit test\n");
-				exit(0);
-			}
-		}
-		//close(fd);
-		#endif
 	}
 }
 

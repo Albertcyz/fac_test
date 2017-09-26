@@ -33,15 +33,15 @@ typedef struct pares_cmd_tbl{
 	int argc;
 } pares_cmd_tbl;
 
-static cmd_tbl_list gobal_cmd_list;
+extern cmd_tbl_list gobal_cmd_list;
 //static char cmd_from_input[MAXINPUTCHAR];
-static pares_cmd_tbl gobal_pares_cmd_argv;
-static char *mac_before_cmd = NULL;
-static char cmd_from_input[MAXINPUTCHAR];
+extern pares_cmd_tbl gobal_pares_cmd_argv;
+extern char *mac_before_cmd;
+extern char cmd_from_input[MAXINPUTCHAR];
 
-static char udp_buf[1024];
+extern char udp_buf[1024];
 
-static char local_ip[50];
-static char local_mac[50];
+extern char local_ip[50];
+extern char local_mac[50];
 
 #endif

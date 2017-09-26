@@ -7,9 +7,9 @@
 #define UDP_CMD_PORT 9975
 #define LAN_PORT "wlan0"
 
-static int udp_fd = -1;
+extern int udp_fd;
 
-static pthread_t udp_cmd_id, udp_broadcast_id;
+extern pthread_t udp_cmd_id, udp_broadcast_id;
 
 
 int get_local_ip_mac(char *buf_ip, char *buf_mac);

@@ -11,6 +11,11 @@
 #include <pthread.h>
 
 
+int udp_fd = -1;
+
+pthread_t udp_cmd_id, udp_broadcast_id;
+
+
 bool exit_broadcast = false;
 struct sockaddr_in sock_from = {0};
 
@@ -40,7 +45,7 @@ int get_local_ip_mac(char *buf_ip, char *buf_mac)
 		//printf("local ip --> %s\n", ipaddr);
 
 		strcpy(buf_ip, ipaddr);
-		printf("local ip --> %s\n", buf_ip);
+		//printf("local ip --> %s\n", buf_ip);
 	}
 
 	if(buf_mac){
@@ -56,7 +61,7 @@ int get_local_ip_mac(char *buf_ip, char *buf_mac)
 				ifr_ip.ifr_hwaddr.sa_data[3], \
 				ifr_ip.ifr_hwaddr.sa_data[4], \
 				ifr_ip.ifr_hwaddr.sa_data[5]);
-		printf("mac --> %s\n", buf_mac);
+		//printf("mac --> %s\n", buf_mac);
 	}
 	close(sockfd);
 }
