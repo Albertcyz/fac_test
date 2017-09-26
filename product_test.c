@@ -9,6 +9,8 @@
 #include <sys/ioctl.h>
 #include <net/if.h>
 #include <pthread.h>
+#include <fcntl.h>
+
 
 
 int udp_fd = -1;
@@ -18,6 +20,9 @@ pthread_t udp_cmd_id, udp_broadcast_id;
 
 bool exit_broadcast = false;
 struct sockaddr_in sock_from = {0};
+
+int send_message(char *buf);
+
 
 int get_local_ip_mac(char *buf_ip, char *buf_mac)
 {
@@ -154,8 +159,16 @@ void *get_cmd_from_udp(void *arg)
 			perror("udp recv");
 		}
 		else{
-			exit_broadcast = true;
-			strcpy((char *)arg, buf);
+			if(exit_broadcast == false){
+				exit_broadcast = true;
+				
+				//set the output for udp
+				buf_fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
+				dup2(buf_fd, 1);
+				//close(fd);
+			}
+			//send_message("Input cmd:\n");
+				strcpy((char *)arg, buf);
 			//printf("udp input buf:%s\n", buf);
 		}
 	}
@@ -166,9 +179,12 @@ int send_message(char *buf)
 	if(udp_fd > 0 && buf){
 		sendto(udp_fd, buf, strlen(buf), 0, \
 				(const struct sockaddr *)&sock_from, sizeof(sock_from));
+		return 0;
 	}
-	//else
+	else{
 		//printf("udp_fd is not exist\n");
+		return -1;
+	}
 }
 
 #if 0

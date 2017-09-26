@@ -19,13 +19,17 @@ pares_cmd_tbl gobal_pares_cmd_argv;
 char *mac_before_cmd = NULL;
 char cmd_from_input[MAXINPUTCHAR];
 
-char udp_buf[1024];
+char udp_buf[MAXBUF];
 
 char local_ip[50] = {0};
 char local_mac[50] = {0};
 
+int buf_fd = -1;
+
 
 int cmd_help(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int cmd_help_socket(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+
 
 int add_to_cmd_list(char *_name, int _maxargs, cmd_func *_cmd, char *help)
 {
@@ -44,11 +48,12 @@ int add_to_cmd_list(char *_name, int _maxargs, cmd_func *_cmd, char *help)
 		
 }
 
-void cmd_init(void)
+void cmd_init_uart(void)
 {
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
 	add_to_cmd_list("help", 2, cmd_help, "Print help.");
+	add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
 	add_to_cmd_list("LED01", 2, test_rgb_r, "LED RED ON.");
 	add_to_cmd_list("LED11", 2, test_rgb_g, "LED Green ON.");
 	add_to_cmd_list("LED21", 2, test_rgb_b, "LED BLUE ON.");
@@ -57,18 +62,24 @@ void cmd_init(void)
 	add_to_cmd_list("LUMEN", 2, test_lumen_uart, "Return illumination value.");
 	add_to_cmd_list("speaker", 2, test_speaker, "Play 1khz sinusoidal sound.");
 	add_to_cmd_list("key", 2, test_key, "Test key.");
-	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
-	add_to_cmd_list("cmd_chk_zig", 2, zig_ver, "Test the zigbee chip communication, return zigbee chip firmware version");
-	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
-	add_to_cmd_list("join", 2, zig_join, "Zigbee join.");
 	add_to_cmd_list("m_play", 3, m_play, "Play music.Usage : m_play name volume.");
+	add_to_cmd_list("cmd_chk_zig", 2, zig_ver, "Test the zigbee chip communication, return zigbee chip firmware version");
+	add_to_cmd_list("join", 2, zig_join, "Zigbee join.");
 	add_to_cmd_list("remove", 3, zig_remove, "remove device.");
 	add_to_cmd_list("get_zig_temp", 2, get_zig_temperature, "Get zigbee temperature.");
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
+	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
+	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
 }
+
+void cmd_init_socket(void)
+{
+
+}
+
 
 int get_cmd_from_uart(char *buf, int count)
 {
@@ -180,19 +191,23 @@ void *key_exit(void *arg)
 
 void *udp_output(void *arg)
 {
-	char buf[MAXBUF];
+	//char buf[MAXBUF];
 	int i = 0;
+	int j = 0;
 	int len = 0;
-	int fd = -1;
-	fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
-	write(fd, "Enter product test...\n", 50);
+	//int fd = -1;
+	//fd = open(OUTPUT_BUF, O_RDWR | O_CREAT |  O_APPEND);
+	//if(buf_fd > 0)
+	//	write(buf_fd, "Enter product test...\n", 50);
 	while(1){
-		len = read(fd, buf, MAXBUF);
-		if(len > 0){
-				send_message(buf);
-				memset(buf, '\0', MAXBUF);
-				close(fd);
-				fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+		if(buf_fd > 0){
+			len = read(buf_fd, udp_buf, MAXBUF);
+			if(len > 0 && exit_broadcast){
+				send_message(udp_buf);
+				memset(udp_buf, '\0', MAXBUF);
+				close(buf_fd);
+				buf_fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+			}
 		}
 	}
 }
@@ -201,11 +216,11 @@ void *udp_output(void *arg)
 
 int main()
 {
-#if 1
+#if 0
 	//add_to_cmd_list("abc", 3, abc, "abc");
 	system("stty erase ^H");
 	printf("Enter PCBA Test...\n");
-	cmd_init();
+	cmd_init_uart();
 	init_zigbee();
 	//gobal_cmd_list.cmd_list[0].cmd(NULL, 0, NULL);
 	//printf("%s, %d, %s\n", gobal_cmd_list.cmd_list[0].name, \
@@ -229,12 +244,12 @@ int main()
 	}
 #endif;
 
-#if 0
+#if 1
 	char mac_ip[100];
 	
 	system("stty erase ^H");
 	printf("Enter PCBA Test...\n");
-	cmd_init();
+	cmd_init_uart();
 	init_zigbee();
 
 	get_local_ip_mac(local_ip, local_mac);
@@ -247,15 +262,18 @@ int main()
 	pthread_create(&output_id, NULL, udp_output, NULL);
 	pthread_detach(output_id);
 
-	int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
-	dup2(fd, 1);
-	close(fd);
+	//int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+	//dup2(fd, 1);
+	//close(fd);
 
-	usleep(1000*1000);
+	while(!exit_broadcast);
+
+	//usleep(1000*1000);
 	
 	while(1){
-		if(cmd_from_input[1] != '\0'){
+		if(cmd_from_input[1] != '\0' && exit_broadcast){
 			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
+			//usleep(1000*1000);
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
 			memset(cmd_from_input, '\0', MAXINPUTCHAR);
 		}
@@ -276,4 +294,22 @@ int cmd_help(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		printf("%s\n    --%s\n", gobal_cmd_list.cmd_list[i].name, gobal_cmd_list.cmd_list[i].help);
 	}
 }
+
+int cmd_help_socket(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	int i = 0;
+	char buf[MAXBUF];
+	//printf("%d", gobal_cmd_list.cmdc);
+	for(; i < gobal_cmd_list.cmdc; i++){
+		memset(buf, '\0', MAXBUF);
+		sprintf(buf, "%s\n", gobal_cmd_list.cmd_list[i].name);
+		send_message(buf);
+
+		memset(buf, '\0', MAXBUF);
+		sprintf(buf, "--%s\n", gobal_cmd_list.cmd_list[i].help);
+		send_message(buf);
+	}
+	return 0;
+}
+
 

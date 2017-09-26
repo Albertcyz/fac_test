@@ -44,4 +44,7 @@ extern char udp_buf[1024];
 extern char local_ip[50];
 extern char local_mac[50];
 
+extern int buf_fd;
+
+
 #endif
