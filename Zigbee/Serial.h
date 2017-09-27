@@ -5,6 +5,7 @@
 #include <time.h>
 #include "Config.h"
 #include "../command.h"
+#include "../peri.h"
 
 
 #if defined(__WIN32__) 
@@ -21,6 +22,8 @@
 
 #define BUFFER_SIZE 256
 #define TIME_OUT 20 // 20 ms
+
+#define ZIG_DEV_CONF "/home/root/fac/%s.conf"
 
 enum parity
 {

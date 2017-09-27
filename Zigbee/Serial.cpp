@@ -9,8 +9,11 @@
 #include "json.hpp"
 #include "zigbee/zigbee_enum.h"
 //#include "Utility.cpp"
+#include <fstream>
 
 using nlohmann::json;
+
+static bool play_music_flag = false;
 
 #if defined(__WIN32__)
 
@@ -558,14 +561,14 @@ uint32_t model_zigbee_to_num(const char* model_str)
 			return model_id_name[i].model_num;
 		}
 	}
-	printf("error: not support model:%s, please support in Utility.cpp's (static device_model_name_t model_id_name[] = {) \n", model_str);
+	//printf("error: not support model:%s, please support in Utility.cpp's (static device_model_name_t model_id_name[] = {) \n", model_str);
 	return LUMI_UNKNOW;
 }
 
 
 void  on_zig_report(string message)
 {
-	cout << message << endl;
+	//cout << message << endl;
 	json msg = json::parse(message.c_str());
 	
 	string cmd = GetJsonValueString(msg, "cmd");
@@ -585,20 +588,33 @@ void  on_zig_report(string message)
 	int cur_version = GetJsonValueInt(msg, "current_version");//atoi(_current_version.c_str());
 	//int info_type = GetJsonValueInt(msg, "info_type");//strtol(_info_type.c_str(), NULL, 16);
 	int data_len = GetJsonValueInt(msg, "data_len");//atoi(_data_len.c_str());
-	char buf[100];
+	char buf[1024];
 	
 	if(cmd == "zigbee_join"){
-		system("gst-launch-1.0 playbin uri=file://////home//root//music//add_ok.mp3 volume=0.1 > //tmp//music");
+		//system("gst-launch-1.0 playbin uri=file://////home//root//music//add_ok.mp3 volume=0.1 > //tmp//music");
+		play_music("/home/root/music/add_ok.mp3", 0.2);
 		exit_func = true;
 		disable_join();
-		cout << "short_id:" << short_id << endl;
+		//cout << "short_id:" << short_id << endl;
+		//cout << "device_id:" << _sid << endl;
+		//cout << "Join success\n" << endl;
+		//sprintf(buf, "echo %d %lld > %s", short_id, _sid, ZIG_DEV_BUF);
+		//system(buf);
+		char buf[MAXBUF];
+		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
+		//cout << buf << endl;
+		ofstream zig_dev(buf);
+		if(zig_dev.is_open()){
+			zig_dev << message << endl;
+		}
+		zig_dev.close();
 		cout << "device_id:" << _sid << endl;
-		cout << "Join success\n" << endl;
-		sprintf(buf, "echo %d %lld > /home/root/fac/device", short_id, sid);
-		system(buf);
 	}
 	if(cmd == "remove_device"){
-		system("gst-launch-1.0 playbin uri=file://////home//root//music//deleted.mp3 volume=0.1 > //tmp//music");
+		//system("gst-launch-1.0 playbin uri=file://////home//root//music//deleted.mp3 volume=0.1 > //tmp//music");
+		if(play_music_flag == true){
+			play_music_flag = false;
+		}
 	}
 }
 string get_model_from_manage(int short_id)
@@ -636,30 +652,52 @@ int zig_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]){
 int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	int i = 60;
-	//allow_join(i);
-	allow_join_in_factory_mode();
+	allow_join(i);
+	//allow_join_in_factory_mode();
 	printf("Joining...\n");
 	timeout _timeout((i-1)*1000);
 	_timeout.start();
 	while(!exit_func){
 		if(!_timeout.end()){
 			disable_join();
-			system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
+			//system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
+			play_music("/home/root/music/join_gateway_fail.mp3", 0.2);
 			cout << "Join fail\n" << endl;
 			break;
 		}
 	}
+	exit_func = false;
 	return 0;
 }
 
 int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
-{
-	string _sid = _argv[2];
-	//cout << a << endl;
-	uint64_t sid = sid_str_2_uint64(_sid);	
-	//cout << b << endl;
-	//printf("%d %lld\n", atoi(_argv[1]), sid);
-	remove_zigbee_device(atoi(_argv[1]), sid);
+{	
+	char dev_buf[MAXBUF];
+	char buf[MAXBUF];
+	uint64_t sid;
+	int short_id;
+	
+	sprintf(dev_buf, ZIG_DEV_CONF, _argv[1]);
+	//cout << "dev_buf:" << dev_buf << endl;
+	if(access(dev_buf, F_OK) == 0){
+		ifstream zig_dev(dev_buf);
+		if(zig_dev.is_open()){
+			zig_dev.getline(buf, MAXBUF);
+			//cout << buf << endl;
+			json msg = json::parse(buf);
+			short_id = GetJsonValueInt(msg, "short_id");
+			string _sid = GetJsonValueString(msg, "sid");
+			sid = sid_str_2_uint64(_sid);
+			zig_dev.close();
+			remove(dev_buf);
+			if(play_music_flag == false){
+				play_music("/home/root/music/deleted.mp3", 0.2);
+				cout << "Remove success" << endl;
+				play_music_flag = true;
+			}
+		}
+	}
+	remove_zigbee_device(short_id, sid);
 }
 
 int get_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
@@ -680,9 +718,9 @@ int cal_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	printf("channel %d\n", atoi(_argv[1]));
+	enter_factory_mode();
 	//set_dongle_current_channel(atoi(_argv[1]));
-	scan_channel_energy();
+	//scan_channel_energy();
 	printf("Testing...\n");
 }
 

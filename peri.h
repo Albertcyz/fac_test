@@ -17,6 +17,8 @@
 #define LIGHT_PATH "/sys/bus/iio/devices/iio:device0/in_voltage5_raw"
 
 
+int play_music(char *music_name, float volume);
+
 int test_rgb_r(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_rgb_g(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_rgb_b(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);

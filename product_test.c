@@ -159,15 +159,7 @@ void *get_cmd_from_udp(void *arg)
 			perror("udp recv");
 		}
 		else{
-			if(exit_broadcast == false){
 				exit_broadcast = true;
-				
-				//set the output for udp
-				buf_fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
-				dup2(buf_fd, 1);
-				//close(fd);
-			}
-			//send_message("Input cmd:\n");
 				strcpy((char *)arg, buf);
 			//printf("udp input buf:%s\n", buf);
 		}

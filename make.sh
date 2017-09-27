@@ -1,6 +1,6 @@
-#! /bin/sh
+#! /bin/bash
 
-source /opt/fsl-imx-fb/4.1.15-2.0.0/environment-setup-cortexa7hf-neon-poky-linux-gnueabi
+source "/opt/fsl-imx-fb/4.1.15-2.0.0/environment-setup-cortexa7hf-neon-poky-linux-gnueabi"
 
 echo $CXX
 
@@ -8,4 +8,7 @@ $CXX *.c -w Zigbee/Serial.cpp Zigbee/zigbee/*.cpp -lpthread nfc/*.c -L./nfc -lnf
 
 arm-poky-linux-gnueabi-strip a.out
 
-scp a.out root@192.168.0.113:/home/root
+if [ $# = 1 ];then
+	echo "Sending..."
+	scp a.out root@"$1":/home/root
+fi

@@ -195,18 +195,18 @@ void *udp_output(void *arg)
 	int i = 0;
 	int j = 0;
 	int len = 0;
-	//int fd = -1;
-	//fd = open(OUTPUT_BUF, O_RDWR | O_CREAT |  O_APPEND);
+	int fd = -1;
+	fd = open(OUTPUT_BUF, O_RDWR | O_CREAT |  O_APPEND);
 	//if(buf_fd > 0)
 	//	write(buf_fd, "Enter product test...\n", 50);
 	while(1){
-		if(buf_fd > 0){
-			len = read(buf_fd, udp_buf, MAXBUF);
+		if(fd > 0){
+			len = read(fd, udp_buf, MAXBUF);
 			if(len > 0 && exit_broadcast){
 				send_message(udp_buf);
 				memset(udp_buf, '\0', MAXBUF);
-				close(buf_fd);
-				buf_fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+				close(fd);
+				fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
 			}
 		}
 	}
@@ -216,7 +216,7 @@ void *udp_output(void *arg)
 
 int main()
 {
-#if 0
+#if 1
 	//add_to_cmd_list("abc", 3, abc, "abc");
 	system("stty erase ^H");
 	printf("Enter PCBA Test...\n");
@@ -244,7 +244,7 @@ int main()
 	}
 #endif;
 
-#if 1
+#if 0
 	char mac_ip[100];
 	
 	system("stty erase ^H");
@@ -262,9 +262,9 @@ int main()
 	pthread_create(&output_id, NULL, udp_output, NULL);
 	pthread_detach(output_id);
 
-	//int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
-	//dup2(fd, 1);
-	//close(fd);
+	int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+	dup2(fd, 1);
+	close(fd);
 
 	while(!exit_broadcast);
 

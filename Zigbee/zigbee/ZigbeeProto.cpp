@@ -2354,7 +2354,7 @@ int ZigbeeProto::parse_attribe_modelid_report(uint16_t type, uint8_t *data, int 
 		model = get_model_key((char*)&data[11]);
 
 		if (model != 0 && model != 0xFFFFFFFF && model < 25) {
-			printf("go to noticed modelid \n");
+			//printf("go to noticed modelid \n");
 			zigbee_join_model = model;
 			zigbee_join_device_isLuMiDevice = true;
 			return 0;
