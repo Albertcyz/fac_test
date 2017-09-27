@@ -16,6 +16,8 @@
 #define THERMAL_PATH "/sys/class/thermal/thermal_zone0/temp"
 #define LIGHT_PATH "/sys/bus/iio/devices/iio:device0/in_voltage5_raw"
 
+#define SN_FILE "/home/root/fac/sn.conf"
+#define SN_HD_FILE "/home/root/fac/sn_hw.conf"
 
 int play_music(char *music_name, float volume);
 
@@ -30,5 +32,10 @@ int test_key(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 int exit_test(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+
+int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 #endif

@@ -71,6 +71,10 @@ void cmd_init_uart(void)
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
+	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
+	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
+	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
+	add_to_cmd_list("get_hd_ver", 2, set_sn, "Get hardware version.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
 	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
 }

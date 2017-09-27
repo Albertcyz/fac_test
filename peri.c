@@ -182,4 +182,45 @@ int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	return -1;
 }
 
+int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	int fd = open(SN_FILE, O_RDWR | O_CREAT | O_TRUNC);
+	write(fd, _argv[1], strlen(_argv[1]));
+	close (fd);
+}
+
+int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf[MAXBUF] = {'\0'};
+	if(access(SN_FILE, F_OK) == 0){
+		int fd = open(SN_FILE, O_RDONLY);
+		read(fd, buf, MAXBUF);
+		close (fd);
+		printf("sn:%s\n", buf);
+	}
+	else
+		printf("Get sn fail\n");
+	return 0;
+}
+
+int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	int fd = open(SN_HD_FILE, O_RDWR | O_CREAT | O_TRUNC);
+	write(fd, _argv[1], strlen(_argv[1]));
+	close (fd);
+}
+
+int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf[MAXBUF] = {'\0'};
+	if(access(SN_HD_FILE, F_OK) == 0){
+		int fd = open(SN_HD_FILE, O_RDONLY);
+		read(fd, buf, MAXBUF);
+		close (fd);
+		printf("hd_ver:%s\n", buf);
+	}
+	else
+		printf("Get hd_ver fail\n");
+	return 0;
+}
 
