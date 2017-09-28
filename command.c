@@ -13,6 +13,11 @@
 #include <stdarg.h>
 #include "wifi.h"
 
+#define READ_KEY system("memtool -16 20A0000 1 | cut -d ':' -f 2 -s | cut -c 3 > /tmp/key_enter_test")
+#define RM_PCBA_TEST_OK system("rm /home/root/fac/pcba_test_ok")
+#define RM_PRO_TEST_OK system("rm /home/root/fac/pro_test_ok")
+
+
 cmd_tbl_list gobal_cmd_list;
 //static char cmd_from_input[MAXINPUTCHAR];
 pares_cmd_tbl gobal_pares_cmd_argv;
@@ -25,6 +30,9 @@ char local_ip[50] = {0};
 char local_mac[50] = {0};
 
 int buf_fd = -1;
+
+bool pcba_test_flag = false;
+bool pro_test_flag = false;
 
 
 int cmd_help(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
@@ -53,13 +61,13 @@ void cmd_init_uart(void)
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
 	add_to_cmd_list("help", 2, cmd_help, "Print help.");
-	add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
+	//add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
 	add_to_cmd_list("LED01", 2, test_rgb_r, "LED RED ON.");
 	add_to_cmd_list("LED11", 2, test_rgb_g, "LED Green ON.");
 	add_to_cmd_list("LED21", 2, test_rgb_b, "LED BLUE ON.");
 	add_to_cmd_list("LED3", 2, test_rgb_white, "LED white ON.");
 	add_to_cmd_list("LED00", 2, test_rgb_close, "LED OFF.");
-	add_to_cmd_list("LUMEN", 2, test_lumen_uart, "Return illumination value.");
+	add_to_cmd_list("LUMEN", 2, test_lumen, "Return illumination value.");
 	add_to_cmd_list("speaker", 2, test_speaker, "Play 1khz sinusoidal sound.");
 	add_to_cmd_list("key", 2, test_key, "Test key.");
 	add_to_cmd_list("m_play", 3, m_play, "Play music.Usage : m_play name volume.");
@@ -74,16 +82,44 @@ void cmd_init_uart(void)
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
 	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
-	add_to_cmd_list("get_hd_ver", 2, set_sn, "Get hardware version.");
+	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
 	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
+	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
 }
 
-void cmd_init_socket(void)
+void cmd_init_udp(void)
 {
-
+	//use the func "add_to_cmd_list" add the command at here
+	int i = 0;
+	//add_to_cmd_list("help", 2, cmd_help, "Print help.");
+	add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
+	add_to_cmd_list("led_red", 2, test_rgb_r, "LED RED ON.");
+	add_to_cmd_list("led_green", 2, test_rgb_g, "LED Green ON.");
+	add_to_cmd_list("led_blue", 2, test_rgb_b, "LED BLUE ON.");
+	add_to_cmd_list("led_white", 2, test_rgb_white, "LED white ON.");
+	add_to_cmd_list("led_yellow", 2, test_rgb_yellow, "LED white ON.");
+	add_to_cmd_list("led_off", 2, test_rgb_close, "LED OFF.");
+	add_to_cmd_list("get_lux", 2, test_lumen, "Return illumination value.");
+	add_to_cmd_list("speaker", 2, test_speaker_udp, "Play 1khz sinusoidal sound.");
+	add_to_cmd_list("key", 2, test_key, "Test key.");
+	add_to_cmd_list("m_play", 3, m_play, "Play music.Usage : m_play name volume.");
+	add_to_cmd_list("cmd_chk_zig", 2, zig_ver, "Test the zigbee chip communication, return zigbee chip firmware version");
+	add_to_cmd_list("join_network", 2, zig_join, "Zigbee join.");
+	add_to_cmd_list("delete", 3, zig_remove, "remove device.");
+	add_to_cmd_list("get_zig_temp", 2, get_zig_temperature, "Get zigbee temperature.");
+	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
+	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
+	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
+	add_to_cmd_list("wifi_rssi", 3, wifi_rssi, "Return wifi rssi.");
+	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
+	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
+	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
+	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
+	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
+	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
+	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
 }
-
 
 int get_cmd_from_uart(char *buf, int count)
 {
@@ -158,6 +194,84 @@ int run_cmd(cmd_tbl_s *_cmd, pares_cmd_tbl *_argv)
 	return 0;
 }
 
+char chartobin(char ch)
+{
+	if(ch >= '0' && ch <= '9'){
+		return (ch - '0');
+	}
+	else if(ch >= 'A' && ch <= 'F'){
+		return (10 + ch - 'A');
+	}
+	else if(ch >= 'a' && ch <= 'f'){
+		return (10 + ch - 'a');
+	}
+	return -1;
+}
+
+int read_key_bit()
+{
+	int fd = -1;
+	char ch, key_bit;
+
+	READ_KEY;
+	fd = open("/tmp/key_enter_test", O_RDONLY);
+	if(fd == -1){
+		perror("open key_enter_test");
+		return -1;
+	}
+	
+	read(fd, &ch, 1);
+	close(fd);
+	//printf("%s\n", &ch);
+	key_bit = chartobin(ch);
+	//printf("key_bit : %d\n", key_bit);
+	return (key_bit > 3);
+}
+
+int key_enter_test()
+{
+	struct input_event key;
+	int key_count= 0;
+	timeout _timer(300);
+	int fd = -1;
+	printf("key bit:%d\n", read_key_bit());
+	//if(access(PCBA_TEST_OK, F_OK)  && access(PRO_TEST_OK, F_OK))
+		//return 0;
+	if(read_key_bit() == 0){
+		//printf("key bit = 1\n");
+		_timer.start();
+		while(1){
+			printf("%d\n", _timer.end());
+			if(!_timer.end())
+				break;
+			if(read_key_bit())
+				return 0;
+		}
+		//printf("enter\n");
+		test_rgb_white(NULL, 0, NULL);
+		//_timer.timeout(300);
+		timeout _timer2(100);
+		_timer2.start();
+		fd = open(BUTTON_PATH, O_RDONLY | O_SYNC | O_NONBLOCK);
+		while(1){
+			if(read(fd, &key, sizeof(key)) == sizeof(key)){
+				if(key.type == EV_KEY && key.value == 1){
+					key_count++;
+				}
+			}
+			//printf("count:%d\n", key_count);
+			if(key_count == 1 && !_timer2.end()){
+				RM_PCBA_TEST_OK;
+				break;
+			}
+			if(key_count == 2 && !_timer2.end()){
+				RM_PRO_TEST_OK;
+				break;
+			}
+		}
+	}
+}
+
 //Exit the pcba test or product test
 void *key_exit(void *arg)
 {
@@ -179,6 +293,12 @@ void *key_exit(void *arg)
 						if(key.type == EV_KEY && key.value == 1){
 							close(fd);
 							printf("Exit test\n");
+							if(pcba_test_flag){
+								close(open(PCBA_TEST_OK, O_RDWR | O_CREAT));
+							}
+							if(pro_test_flag){
+								close(open(PRO_TEST_OK, O_RDWR | O_CREAT));
+							}
 							exit(0);
 						}
 					}
@@ -220,69 +340,61 @@ void *udp_output(void *arg)
 
 int main()
 {
-#if 1
-	//add_to_cmd_list("abc", 3, abc, "abc");
-	system("stty erase ^H");
-	printf("Enter PCBA Test...\n");
-	cmd_init_uart();
-	init_zigbee();
-	//gobal_cmd_list.cmd_list[0].cmd(NULL, 0, NULL);
-	//printf("%s, %d, %s\n", gobal_cmd_list.cmd_list[0].name, \
-		//gobal_cmd_list.cmd_list[0].maxargs, \
-		//gobal_cmd_list.cmd_list[0].help);
-
-	pthread_t id;
-	pthread_create(&id, NULL, key_exit, NULL);
-	while(1){
-	//strcpy(cmd_from_input, "   abc:efg     hij   \0");
-	printf("Input cmd:");
-	get_cmd_from_uart(cmd_from_input, MAXINPUTCHAR);
-	int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
-	//printf("mac : %s\n", mac_before_cmd);
-	//printf("argc=%d\n", argc);
+	key_enter_test();
 	
-	//for(i=0; i < argc; i++)
-	//	printf("argc[%d]:%s\n", i, gobal_pares_cmd_argv.argv[i]);
-
-	run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
-	}
-#endif;
-
-#if 0
-	char mac_ip[100];
+	//Create the key exit pthread
+	pthread_t key_exit_id;
+	pthread_create(&key_exit_id, NULL, key_exit, NULL);
 	
-	system("stty erase ^H");
-	printf("Enter PCBA Test...\n");
-	cmd_init_uart();
-	init_zigbee();
+	//Enter pcba test
+	if(access(PCBA_TEST_OK, F_OK) != 0){
+		system("stty erase ^H");
+		printf("Enter PCBA Test...\n");
+		pcba_test_flag = true;
+		cmd_init_uart();
+		init_zigbee();
 
-	get_local_ip_mac(local_ip, local_mac);
-	sprintf(mac_ip, "%s:%s", local_mac, local_ip);
-	pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
-	pthread_detach(udp_broadcast_id);
-	pthread_create(&udp_cmd_id, NULL, get_cmd_from_udp, (void *)cmd_from_input);
-	pthread_detach(udp_cmd_id);
-	pthread_t output_id;
-	pthread_create(&output_id, NULL, udp_output, NULL);
-	pthread_detach(output_id);
-
-	int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
-	dup2(fd, 1);
-	close(fd);
-
-	while(!exit_broadcast);
-
-	//usleep(1000*1000);
-	
-	while(1){
-		if(cmd_from_input[1] != '\0' && exit_broadcast){
+		while(1){
+			printf("Input cmd:");
+			get_cmd_from_uart(cmd_from_input, MAXINPUTCHAR);
 			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
-			//usleep(1000*1000);
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
-			memset(cmd_from_input, '\0', MAXINPUTCHAR);
 		}
 	}
-#endif
+
+	//Enter procudt test
+	if(access(PRO_TEST_OK, F_OK) != 0){
+		char mac_ip[100];
+	
+		printf("Enter Product Test...\n");
+		pro_test_flag = true;
+		cmd_init_udp();
+		init_zigbee();
+		
+		get_local_ip_mac(local_ip, local_mac);
+		sprintf(mac_ip, "%s:%s", local_mac, local_ip);
+		pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
+		pthread_detach(udp_broadcast_id);
+		pthread_create(&udp_cmd_id, NULL, get_cmd_from_udp, (void *)cmd_from_input);
+		pthread_detach(udp_cmd_id);
+		pthread_t output_id;
+		pthread_create(&output_id, NULL, udp_output, NULL);
+		pthread_detach(output_id);
+
+		int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+		dup2(fd, 1);
+		close(fd);
+
+		while(!exit_broadcast);
+
+		while(1){
+			if(cmd_from_input[1] != '\0' && exit_broadcast){
+				int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
+				run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
+				memset(cmd_from_input, '\0', MAXINPUTCHAR);
+			}
+		}
+	}
 	
 	return 0;
 }

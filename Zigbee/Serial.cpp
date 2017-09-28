@@ -357,6 +357,7 @@ char timeout::end(void)
 {
 	if (m_state)
 	{
+		//cout << ((clock() - m_time) / (double)(CLOCKS_PER_SEC / 1000)) << endl;
 		if (((clock() - m_time) / (double)(CLOCKS_PER_SEC / 1000)) >= m_maxTime)
 		{
 			m_state = 0;

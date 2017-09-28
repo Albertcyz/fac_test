@@ -12,6 +12,11 @@
 
 #define OUTPUT_BUF "/tmp/output_buf"
 
+#define PCBA_TEST_OK "/home/root/fac/pcba_test_ok"
+#define PRO_TEST_OK "/home/root/fac/pro_test_ok"
+
+
+
 //命令结构体
 typedef struct cmd_tbl_s{
 	char *name;
@@ -46,5 +51,7 @@ extern char local_mac[50];
 
 extern int buf_fd;
 
+extern bool pcba_test_flag;
+extern bool pro_test_flag;
 
 #endif

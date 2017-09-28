@@ -15,6 +15,8 @@ int test_rgb_r(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	else		
 		write(fd, "100", strlen("100"));
 	close(fd);
+	//printf("RGB_R OK\n");
+	return 0;
 }
 
 //Operation the green of RGB
@@ -31,6 +33,7 @@ int test_rgb_g(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	else		
 		write(fd, "100", strlen("100"));
 	close(fd);
+	//printf("RGB_G OK\n");
 	return 0;
 }
 
@@ -49,6 +52,7 @@ int test_rgb_b(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	else		
 		write(fd, "100", strlen("100"));
 	close(fd);
+	//printf("RGB_B OK\n");
 	return 0;
 }
 
@@ -58,8 +62,19 @@ int test_rgb_white(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	test_rgb_r(_cmd, 0, NULL);
 	test_rgb_g(_cmd, 0, NULL);
 	test_rgb_b(_cmd, 0, NULL);
+	//printf("RGB_white OK\n");
 	return 0;
 }
+
+//Operation the yellow of RGB
+int test_rgb_yellow(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	test_rgb_r(_cmd, 0, NULL);
+	test_rgb_g(_cmd, 0, NULL);
+	//printf("RGB_yellow OK\n");
+	return 0;
+}
+
 
 //Turn off the RGB
 int test_rgb_close(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
@@ -68,11 +83,12 @@ int test_rgb_close(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	test_rgb_r(_cmd, 1, a);
 	test_rgb_g(_cmd, 1, a);
 	test_rgb_b(_cmd, 1, a);
+	//printf("RGB_close OK\n");
 	return 0;
 }
 
-//Test the LUX for uart
-int test_lumen_uart(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+//Test the LUX 
+int test_lumen(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	int value, ret = 0;
 	float fvoltage;
@@ -119,6 +135,15 @@ int test_speaker(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	return 0;
 }
 
+int test_speaker_udp(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	play_music("//home//root//fac//bbb.mp3", 0.3);
+	printf("Playing OK\n");
+
+	return 0;
+}
+
+
 //Test key
 int test_key(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
@@ -150,13 +175,6 @@ int test_key(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	}
 }
 
-//exit
-int exit_test(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
-{
-	exit(0);
-	return 0;
-}
-
 int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	char *music_name = NULL;
@@ -184,9 +202,20 @@ int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+	if(_argv[1] == NULL){
+		printf("Set_sn fail\n");
+		return -1;
+	}
 	int fd = open(SN_FILE, O_RDWR | O_CREAT | O_TRUNC);
-	write(fd, _argv[1], strlen(_argv[1]));
-	close (fd);
+	if(fd > 0){
+		write(fd, _argv[1], strlen(_argv[1]));
+		close (fd);
+		SYNC;
+		printf("Set sn success\n");
+		return 0;
+	}
+	else
+		return -1;
 }
 
 int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
@@ -194,20 +223,35 @@ int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	char buf[MAXBUF] = {'\0'};
 	if(access(SN_FILE, F_OK) == 0){
 		int fd = open(SN_FILE, O_RDONLY);
-		read(fd, buf, MAXBUF);
-		close (fd);
-		printf("sn:%s\n", buf);
+		if(fd > 0){
+			read(fd, buf, MAXBUF);
+			close (fd);
+			printf("sn:%s\n", buf);
+		}
 	}
-	else
+	else{
 		printf("Get sn fail\n");
+		return -1;
+	}
 	return 0;
 }
 
 int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+	if(_argv[1] == NULL){
+		printf("Set hd_ver fail\n");
+		return -1;
+	}
 	int fd = open(SN_HD_FILE, O_RDWR | O_CREAT | O_TRUNC);
-	write(fd, _argv[1], strlen(_argv[1]));
-	close (fd);
+	if(fd > 0){
+		write(fd, _argv[1], strlen(_argv[1]));
+		close (fd);
+		SYNC;
+		printf("Set hd_ver success\n");
+		return 0;
+	}
+	else
+		return -1;
 }
 
 int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
@@ -215,12 +259,44 @@ int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	char buf[MAXBUF] = {'\0'};
 	if(access(SN_HD_FILE, F_OK) == 0){
 		int fd = open(SN_HD_FILE, O_RDONLY);
-		read(fd, buf, MAXBUF);
-		close (fd);
-		printf("hd_ver:%s\n", buf);
+		if(fd > 0){
+			read(fd, buf, MAXBUF);
+			close (fd);
+			printf("hd_ver:%s\n", buf);
+			return 0;
+		}
 	}
-	else
+	else{
 		printf("Get hd_ver fail\n");
+		return -1;
+	}
 	return 0;
 }
+
+//exit
+int exit_test(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	exit(0);
+	printf("Exit test...\nOK\n");
+	return 0;
+}
+
+int test_ok(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	if(pcba_test_flag){
+		close(open(PCBA_TEST_OK, O_RDWR | O_CREAT));
+		SYNC;
+		printf("PCBA test ok\n");
+		exit(0);
+	}
+	else if(pro_test_flag){
+		close(open(PRO_TEST_OK, O_RDWR | O_CREAT));
+		SYNC;
+		printf("Product test ok\n");
+		exit(0);
+	}
+	return 0;
+}
+
+
 
