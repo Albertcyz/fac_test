@@ -16,6 +16,7 @@ int test_rgb_r(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		write(fd, "100", strlen("100"));
 	close(fd);
 	//printf("RGB_R OK\n");
+	//send_message("abc");
 	return 0;
 }
 
@@ -129,7 +130,7 @@ int play_music(char *music_name, float volume)
 //Test speaker
 int test_speaker(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	play_music("//home//root//fac//1khz.wav", 0.2);
+	play_music("//home//root//fac//1khz.wav", 0.3);
 	printf("Playing OK\n");
 
 	return 0;
@@ -276,8 +277,8 @@ int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 //exit
 int exit_test(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	exit(0);
 	printf("Exit test...\nOK\n");
+	exit(0);
 	return 0;
 }
 
@@ -298,5 +299,10 @@ int test_ok(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	return 0;
 }
 
+int reboot(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	system("reboot");
+	return 0;
+}
 
 

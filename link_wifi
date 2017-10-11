@@ -1,0 +1,16 @@
+#!/bin/bash
+
+/home/root/fac/led_blink &
+
+ifconfig $1 down
+ifconfig $1 up
+
+pkill -9  wpa_supplicant
+
+wpa_supplicant -B -Dnl80211 -i $1 -c/home/root/fac/wpa_supplicant.conf
+
+udhcpc -i $1
+
+killall led_blink
+
+echo 0 > /sys/class/backlight/lumi_r/brightness

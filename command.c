@@ -77,6 +77,7 @@ void cmd_init_uart(void)
 	add_to_cmd_list("get_zig_temp", 2, get_zig_temperature, "Get zigbee temperature.");
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
+	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
@@ -84,8 +85,9 @@ void cmd_init_uart(void)
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
-	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
+	add_to_cmd_list("exit_factory", 2, exit_test, "Exit test.");
 	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
+	add_to_cmd_list("reboot", 2, reboot, "Reboot.");
 }
 
 void cmd_init_udp(void)
@@ -93,7 +95,7 @@ void cmd_init_udp(void)
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
 	//add_to_cmd_list("help", 2, cmd_help, "Print help.");
-	add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
+	add_to_cmd_list("help", 2, cmd_help_socket, "Print help.");
 	add_to_cmd_list("led_red", 2, test_rgb_r, "LED RED ON.");
 	add_to_cmd_list("led_green", 2, test_rgb_g, "LED Green ON.");
 	add_to_cmd_list("led_blue", 2, test_rgb_b, "LED BLUE ON.");
@@ -110,6 +112,7 @@ void cmd_init_udp(void)
 	add_to_cmd_list("get_zig_temp", 2, get_zig_temperature, "Get zigbee temperature.");
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
+	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi_rssi", 3, wifi_rssi, "Return wifi rssi.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
@@ -117,8 +120,9 @@ void cmd_init_udp(void)
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
-	add_to_cmd_list("exit", 2, exit_test, "Exit test.");
+	add_to_cmd_list("exit_factory", 2, exit_test, "Exit test.");
 	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
+	add_to_cmd_list("reboot", 2, reboot, "Reboot.");
 }
 
 int get_cmd_from_uart(char *buf, int count)
@@ -232,9 +236,9 @@ int key_enter_test()
 {
 	struct input_event key;
 	int key_count= 0;
-	timeout _timer(300);
+	timeout _timer(100);
 	int fd = -1;
-	printf("key bit:%d\n", read_key_bit());
+	//printf("key bit:%d\n", read_key_bit());
 	//if(access(PCBA_TEST_OK, F_OK)  && access(PRO_TEST_OK, F_OK))
 		//return 0;
 	if(read_key_bit() == 0){
@@ -250,23 +254,54 @@ int key_enter_test()
 		//printf("enter\n");
 		test_rgb_white(NULL, 0, NULL);
 		//_timer.timeout(300);
-		timeout _timer2(100);
+		timeout _timer2(1500);
 		_timer2.start();
+		timeout _timer3(10000);
+		_timer3.start();
 		fd = open(BUTTON_PATH, O_RDONLY | O_SYNC | O_NONBLOCK);
-		while(1){
+		while(_timer3.end()){
 			if(read(fd, &key, sizeof(key)) == sizeof(key)){
 				if(key.type == EV_KEY && key.value == 1){
 					key_count++;
 				}
 			}
 			//printf("count:%d\n", key_count);
-			if(key_count == 1 && !_timer2.end()){
+			if((!_timer2.end()) && (key_count == 1)){
 				RM_PCBA_TEST_OK;
+				
+				test_rgb_close(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_g(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_close(NULL, 0, NULL);
+				
 				break;
 			}
-			if(key_count == 2 && !_timer2.end()){
+			if((!_timer2.end()) && (key_count == 2)){
+				close(open(PCBA_TEST_OK, O_RDWR | O_CREAT));
+				SYNC;
 				RM_PRO_TEST_OK;
+				
+				test_rgb_close(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_g(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_close(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_g(NULL, 0, NULL);
+				usleep(500*1000);
+				test_rgb_close(NULL, 0, NULL);
+				
 				break;
+			}
+			if((!_timer2.end()) && (key_count == 5)){
+				system("/home/root/fac/wifi_ap");
+				while(1){
+					test_rgb_close(NULL, 0, NULL);
+					usleep(500*1000);
+					test_rgb_g(NULL, 0, NULL);
+					usleep(500*1000);
+				}
 			}
 		}
 	}
@@ -341,6 +376,8 @@ void *udp_output(void *arg)
 int main()
 {
 	key_enter_test();
+
+	test_rgb_close(NULL, 0, NULL);
 	
 	//Create the key exit pthread
 	pthread_t key_exit_id;
@@ -348,11 +385,13 @@ int main()
 	
 	//Enter pcba test
 	if(access(PCBA_TEST_OK, F_OK) != 0){
-		system("stty erase ^H");
-		printf("Enter PCBA Test...\n");
 		pcba_test_flag = true;
 		cmd_init_uart();
+		usleep(1000*1000);
 		init_zigbee();
+
+		system("stty erase ^H");
+		printf("Enter PCBA Test...\n");
 
 		while(1){
 			printf("Input cmd:");
@@ -364,15 +403,36 @@ int main()
 
 	//Enter procudt test
 	if(access(PRO_TEST_OK, F_OK) != 0){
+
+		system("ifconfig wlan0 up");
+		system("ifconfig mlan0 up");
+		//system("ifconfig uap0 up");
+		system("ifconfig");
+
+		//usleep(1000*1000);
+		
+		get_network();
+		printf("net inf:%s\n", network_interface);
+
+		//Link wifi
+		char sta[100];
+		sprintf(sta, "/home/root/fac/link_wifi %s", network_interface);
+		system(sta);
+		
 		char mac_ip[100];
 	
 		printf("Enter Product Test...\n");
 		pro_test_flag = true;
 		cmd_init_udp();
 		init_zigbee();
+
+		//printf("net inf:%s\n", network_interface);
 		
 		get_local_ip_mac(local_ip, local_mac);
+		
+		//printf(mac_ip, "%s:%s\n", local_mac, local_ip);
 		sprintf(mac_ip, "%s:%s", local_mac, local_ip);
+		
 		pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
 		pthread_detach(udp_broadcast_id);
 		pthread_create(&udp_cmd_id, NULL, get_cmd_from_udp, (void *)cmd_from_input);

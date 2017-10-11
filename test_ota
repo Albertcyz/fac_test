@@ -1,0 +1,26 @@
+#!/bin/bash
+
+#/home/root/set_zibee_pin.sh 
+if [ ! -f "/tmp/set_ota_io" ]; then
+	memtool 20E00E4=15 > /tmp/NULL
+	memtool 20E00E8=15 > /tmp/NULL
+	
+	echo 40 > /sys/class/gpio/export
+	echo 41 > /sys/class/gpio/export
+
+	echo out > /sys/class/gpio/gpio40/direction 
+	echo out > /sys/class/gpio/gpio41/direction 
+
+	echo 1 > /sys/class/gpio/gpio40/value 
+	echo 1 > /sys/class/gpio/gpio41/value 
+	
+	touch /tmp/set_ota_io
+fi
+
+if [ $# == 0 ]; then
+	/home/root/iot_jp -s /dev/ttymxc1 | grep "MAC" -A 1 
+fi
+
+if [ $# == 1 ];then
+	/home/root/iot_jp -s /dev/ttymxc1 -f $1
+fi

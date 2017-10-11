@@ -88,5 +88,7 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int cal_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+
 
 

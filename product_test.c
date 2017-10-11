@@ -10,6 +10,7 @@
 #include <net/if.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include "Wifi.h"
 
 
 
@@ -37,7 +38,7 @@ int get_local_ip_mac(char *buf_ip, char *buf_mac)
 	}
 
 	memset(&ifr_ip, 0, sizeof(struct ifreq));
-	strncpy(ifr_ip.ifr_name, LAN_PORT, sizeof(ifr_ip.ifr_name) - 1);
+	strncpy(ifr_ip.ifr_name, network_interface, sizeof(ifr_ip.ifr_name) - 1);
 	
 	if(buf_ip){
 		if(ioctl(sockfd, SIOCGIFADDR, &ifr_ip) < 0){

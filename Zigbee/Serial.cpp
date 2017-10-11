@@ -285,6 +285,7 @@ void serial::Close(void)
 	if (m_fd > 0)
 	{
 		close(m_fd);
+		m_fd = -1;
 	}
 }
 
@@ -638,6 +639,8 @@ uint64_t get_device_id_from_manage(int short_id)
 
 void init_zigbee()
 {
+	system("/home/root/fac/test_ota > /tmp/zig_ota");
+
 	init_com(on_zigbee_recv_data);
 	open_zigbee(on_zig_report, get_model_from_manage, get_short_id_from_manage, get_device_id_from_manage, on_send_data_to_zigbee);
 }
@@ -724,5 +727,20 @@ int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	//scan_channel_energy();
 	printf("Testing...\n");
 }
+
+int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf[MAXBUF];
+	memset(buf, 0, MAXBUF);
+	int fd = open("/tmp/zig_ota", O_RDONLY);
+	if(fd > 0){
+		read(fd, buf, MAXBUF);
+		printf("%s", buf);
+		close(fd);
+		return 0;
+	}
+	return -1;
+}
+
 
 
