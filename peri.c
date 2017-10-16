@@ -305,4 +305,10 @@ int reboot(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	return 0;
 }
 
+int version(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	system("cat /home/root/fac/version");
+}
+
+
 

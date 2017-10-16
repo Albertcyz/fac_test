@@ -594,7 +594,12 @@ void  on_zig_report(string message)
 	
 	if(cmd == "zigbee_join"){
 		//system("gst-launch-1.0 playbin uri=file://////home//root//music//add_ok.mp3 volume=0.1 > //tmp//music");
-		play_music("/home/root/music/add_ok.mp3", 0.2);
+		if(access("/home/root/music/add_ok.mp3", F_OK) == 0){
+			play_music("/home/root/music/add_ok.mp3", 0.2);
+		}
+		else{
+			play_music("/home/root/music/join_success.mp3", 0.2);
+		}
 		exit_func = true;
 		disable_join();
 		//cout << "short_id:" << short_id << endl;
@@ -641,6 +646,8 @@ void init_zigbee()
 {
 	system("/home/root/fac/test_ota > /tmp/zig_ota");
 
+	usleep(1000*1000);
+
 	init_com(on_zigbee_recv_data);
 	open_zigbee(on_zig_report, get_model_from_manage, get_short_id_from_manage, get_device_id_from_manage, on_send_data_to_zigbee);
 }
@@ -665,7 +672,8 @@ int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		if(!_timeout.end()){
 			disable_join();
 			//system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
-			play_music("/home/root/music/join_gateway_fail.mp3", 0.2);
+			if(access("/home/root/music/join_gateway_fail.mp3", F_OK) == 0)
+				play_music("/home/root/music/join_gateway_fail.mp3", 0.2);
 			cout << "Join fail\n" << endl;
 			break;
 		}
@@ -695,7 +703,8 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			zig_dev.close();
 			remove(dev_buf);
 			if(play_music_flag == false){
-				play_music("/home/root/music/deleted.mp3", 0.2);
+				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
+					play_music("/home/root/music/deleted.mp3", 0.2);
 				cout << "Remove success" << endl;
 				play_music_flag = true;
 			}
@@ -716,7 +725,7 @@ int cal_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	int cal_temp = 0;
 	cal_temp = atoi(_argv[1]);
 	calibration_temperature_to_dongle(cal_temp);
-	scan_channel_energy();
+	//scan_channel_energy();
 	printf("Cal success\n");
 }
 

@@ -61,6 +61,7 @@ void cmd_init_uart(void)
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
 	add_to_cmd_list("help", 2, cmd_help, "Print help.");
+	add_to_cmd_list("ver", 2, version, "Get fireware version.");
 	//add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
 	add_to_cmd_list("LED01", 2, test_rgb_r, "LED RED ON.");
 	add_to_cmd_list("LED11", 2, test_rgb_g, "LED Green ON.");
@@ -96,6 +97,7 @@ void cmd_init_udp(void)
 	int i = 0;
 	//add_to_cmd_list("help", 2, cmd_help, "Print help.");
 	add_to_cmd_list("help", 2, cmd_help_socket, "Print help.");
+	add_to_cmd_list("ver", 2, version, "Get fireware version.");
 	add_to_cmd_list("led_red", 2, test_rgb_r, "LED RED ON.");
 	add_to_cmd_list("led_green", 2, test_rgb_g, "LED Green ON.");
 	add_to_cmd_list("led_blue", 2, test_rgb_b, "LED BLUE ON.");

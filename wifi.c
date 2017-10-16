@@ -19,7 +19,7 @@ int get_network()
 	for(ifa = if_list; ifa != NULL; ifa = ifa->ifa_next){
 		//if(ifa->ifa_addr->sa_family == AF_INET){
 			if(strcmp(ifa->ifa_name, "lo")){
-				printf("interfacename: %s\n", ifa->ifa_name);
+				//printf("interfacename: %s\n", ifa->ifa_name);
 				sprintf(network_interface, "%s", ifa->ifa_name);
 			}
 //			printf("ifa->ifa_name:%s\nnetwork_interface:%s\n", \
