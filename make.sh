@@ -8,7 +8,16 @@ $CXX *.c -w Zigbee/Serial.cpp Zigbee/zigbee/*.cpp -lpthread nfc/*.c -L./nfc -lnf
 
 arm-poky-linux-gnueabi-strip fac_test
 
+cp fac_test ./fac/
+cp led_blink ./fac/
+cp test_ota ./fac/
+cp link_wifi ./fac/
+cp wifi_ap ./fac/
+cp wpa_supplicant.conf ./fac/
+
+tar cvf fac.bin ./fac/
+
 if [ $# = 1 ];then
 	echo "Sending..."
-	scp fac_test test_ota link_wifi led_blink wifi_ap wpa_supplicant.conf root@"$1":/home/root/fac
+	scp fac.bin root@"$1":/home/root/fac
 fi

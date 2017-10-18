@@ -1,0 +1,10 @@
+#!/bin/bash
+while [ "1" == "1" ];
+do
+
+	echo 50 > /sys/class/backlight/lumi_r/brightness
+	sleep 0.1
+	echo 0 > /sys/class/backlight/lumi_r/brightness
+	sleep 0.1
+
+done

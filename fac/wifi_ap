@@ -1,0 +1,22 @@
+#!/bin/bash
+
+if [ -f "/tmp/zigbee_mac" ];then
+	ssid=`cat /tmp/zigbee_mac | grep -v ^#`
+	sed -i "s/ssid=lumi-hub-aq1_aqara_FF_FF/ssid=${ssid}/g" `grep "ssid=lumi-hub-aq1_aqara_FF_FF" -rl /wpa/hostapd.conf`
+	rm /tmp/zigbee_mac
+fi
+
+	ifconfig wlan0 down
+	killall udhcpc wpa_supplicant hostapd dhcpd
+	ifconfig wlan0 up
+
+	ifconfig wlan0 192.168.1.1 netmask 255.255.255.0
+	
+	#mount -t tmpfs -o mode=0755 tmpfs /var
+	mkdir -p /var/run/hostapd
+	/wpa/hostapd /wpa/hostapd.conf -ddB
+
+	mkdir -p /var/lib/dhcp
+	touch /var/lib/dhcp/dhcpd.leases
+	#dhcpd wlan0 -cf /etc/dhcp/dhcpd.conf -lf /var/lib/dhcp/dhcpd.leases
+	udhcpd /wpa/udhcpd.conf &

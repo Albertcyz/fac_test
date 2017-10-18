@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define MAXCMDS 200
-#define MAXINPUTCHAR 200
+#define MAXINPUTCHAR 1024
 #define MAXARGVS 10
 #define MAXBUF 1024
 #define GET_MAC
@@ -37,6 +37,8 @@ typedef struct pares_cmd_tbl{
 	char *argv[MAXARGVS];
 	int argc;
 } pares_cmd_tbl;
+
+char chartobin(char ch);
 
 extern cmd_tbl_list gobal_cmd_list;
 //static char cmd_from_input[MAXINPUTCHAR];

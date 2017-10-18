@@ -310,5 +310,48 @@ int version(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	system("cat /home/root/fac/version");
 }
 
+int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	if(_argv[1] == NULL){
+		printf("fail\n");
+		return -1;
+	}
+	if(access(SETUP_CODE_DIR, F_OK) != 0){
+		char buf[MAXBUF];
+		sprintf(buf, "mkdir %s", SETUP_CODE_DIR);
+		system(buf);
+	}
+	
+	char tmp = 0;
+	int i = 0;
+	int fd = open(SETUP_CODE, O_RDWR | O_CREAT | O_TRUNC);
+	if(fd > 0){
+		for(i=0; i < MAXINPUTCHAR; i= i + 2){
+			//printf("%d", *(_argv[1] + i));
+			if(*(_argv[1] + i) == 0 || *(_argv[1] + i + 1) == 0)
+				break;
+			tmp = (chartobin(*(_argv[1] + i)) << 4) + chartobin(*(_argv[1] + i + 1));
+			//printf("tmp:%x\n", tmp);
+			write(fd, &tmp, sizeof(tmp));
+		}
+		close(fd);
+		printf("success\n");
+	}
+}
+
+int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf;
+	int fd = open(SETUP_CODE, O_RDONLY);
+	if(fd > 0){
+		printf("setup code:");
+		while(read(fd, &buf, sizeof(char)) > 0){
+			printf("%02x", buf);
+		}
+		printf("\n");
+		close(fd);
+		return 0;
+	}
+}
 
 

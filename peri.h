@@ -19,6 +19,9 @@
 #define SN_FILE "/home/root/fac/sn.conf"
 #define SN_HD_FILE "/home/root/fac/sn_hw.conf"
 
+#define SETUP_CODE_DIR "/home/root/hkbridge"
+#define SETUP_CODE "/home/root/hkbridge/setup_code_verifier.dat"
+
 #define SYNC system("sync")
 
 int play_music(char *music_name, float volume);
@@ -44,5 +47,7 @@ int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 #endif

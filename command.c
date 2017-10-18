@@ -85,6 +85,8 @@ void cmd_init_uart(void)
 	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
+	add_to_cmd_list("setup_code", 2, setup_code, "Set homekit setup code.");
+	add_to_cmd_list("get_setup_code", 2, get_setup_code, "get homekit setup code.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
 	add_to_cmd_list("exit_factory", 2, exit_test, "Exit test.");
 	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
