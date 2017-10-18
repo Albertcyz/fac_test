@@ -202,6 +202,18 @@ int run_cmd(cmd_tbl_s *_cmd, pares_cmd_tbl *_argv)
 	return 0;
 }
 
+void led_blink()
+{
+	test_rgb_r(NULL, 0, NULL);
+	usleep(200*1000);
+	test_rgb_g(NULL, 0, NULL);
+	usleep(200*1000);
+	test_rgb_b(NULL, 0, NULL);
+	usleep(200*1000);
+	test_rgb_close(NULL, 0, NULL);
+	usleep(200*1000);
+}
+
 char chartobin(char ch)
 {
 	if(ch >= '0' && ch <= '9'){
@@ -240,16 +252,20 @@ int key_enter_test()
 {
 	struct input_event key;
 	int key_count= 0;
-	timeout _timer(100);
+	timeout _timer(50);
 	int fd = -1;
 	//printf("key bit:%d\n", read_key_bit());
 	//if(access(PCBA_TEST_OK, F_OK)  && access(PRO_TEST_OK, F_OK))
 		//return 0;
+	if(read_key_bit() == 1){
+		usleep(100*1000);
+	}
 	if(read_key_bit() == 0){
 		//printf("key bit = 1\n");
 		_timer.start();
 		while(1){
-			printf("%d\n", _timer.end());
+			//printf("%d\n", _timer.end());
+			led_blink();
 			if(!_timer.end())
 				break;
 			if(read_key_bit())
@@ -258,7 +274,7 @@ int key_enter_test()
 		//printf("enter\n");
 		test_rgb_white(NULL, 0, NULL);
 		//_timer.timeout(300);
-		timeout _timer2(1500);
+		timeout _timer2(2500);
 		_timer2.start();
 		timeout _timer3(10000);
 		_timer3.start();
@@ -334,9 +350,13 @@ void *key_exit(void *arg)
 							printf("Exit test\n");
 							if(pcba_test_flag){
 								close(open(PCBA_TEST_OK, O_RDWR | O_CREAT));
+								SYNC;
+								led_blink();
 							}
 							if(pro_test_flag){
 								close(open(PRO_TEST_OK, O_RDWR | O_CREAT));
+								SYNC;
+								led_blink();
 							}
 							exit(0);
 						}
@@ -367,6 +387,7 @@ void *udp_output(void *arg)
 			len = read(fd, udp_buf, MAXBUF);
 			if(len > 0 && exit_broadcast){
 				send_message(udp_buf);
+				//printf("%s", udp_buf);
 				memset(udp_buf, '\0', MAXBUF);
 				close(fd);
 				fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
@@ -379,6 +400,8 @@ void *udp_output(void *arg)
 
 int main()
 {
+	printf("fac_test bulid time:%s %s\r\n", __TIME__, __DATE__);
+
 	key_enter_test();
 
 	test_rgb_close(NULL, 0, NULL);
@@ -391,7 +414,7 @@ int main()
 	if(access(PCBA_TEST_OK, F_OK) != 0){
 		pcba_test_flag = true;
 		cmd_init_uart();
-		usleep(1000*1000);
+		//usleep(1000*1000);
 		init_zigbee();
 
 		system("stty erase ^H");
@@ -445,11 +468,18 @@ int main()
 		pthread_create(&output_id, NULL, udp_output, NULL);
 		pthread_detach(output_id);
 
-		int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
-		dup2(fd, 1);
-		close(fd);
+		//int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+		//dup2(fd, 1);
+		//close(fd);
 
-		while(!exit_broadcast);
+		while(1){
+			if(exit_broadcast == true){
+				int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
+				dup2(fd, 1);
+				close(fd);
+				break;
+			}
+		}
 
 		while(1){
 			if(cmd_from_input[1] != '\0' && exit_broadcast){

@@ -15,6 +15,9 @@ using nlohmann::json;
 
 static bool play_music_flag = false;
 
+bool exit_zig_com = false;
+bool zig_com_status = true;
+
 #if defined(__WIN32__)
 
 char serial::Open(const char* port, int baud, char bits, parity parity, char stopbit)
@@ -390,7 +393,12 @@ void thread_comread(on_com_recv_data_t on_zigbee_recv_data)
 	_ser.Open(SERIAL_PORT, 115200, 8, NO, 1); //  // /dev/ttyS0
 	//cout << "thread_comread:" << SERIAL_PORT << endl;										 //allow_join(30);
 	char buf[1024];
+	zig_com_status = true;
 	while (1) {
+		if(exit_zig_com == true){
+			_ser.Close();
+			break;
+		}
 		int len = _ser.Read(buf);
 		//cout << "len:" << len << endl;
 		if (len > 0) {
@@ -405,6 +413,8 @@ void thread_comread(on_com_recv_data_t on_zigbee_recv_data)
 		}
 		usleep(20);
 	}
+	//cout << "exit thread_comread" << endl;
+	zig_com_status = false;
 }
 
 void init_com(on_com_recv_data_t on_com_recv_data)
@@ -644,9 +654,9 @@ uint64_t get_device_id_from_manage(int short_id)
 
 void init_zigbee()
 {
-	system("/home/root/fac/test_ota > /tmp/zig_ota");
+	//system("/home/root/fac/test_ota > /tmp/zig_ota");
 
-	usleep(1000*1000);
+	//usleep(1000*1000);
 
 	init_com(on_zigbee_recv_data);
 	open_zigbee(on_zig_report, get_model_from_manage, get_short_id_from_manage, get_device_id_from_manage, on_send_data_to_zigbee);
@@ -739,6 +749,7 @@ int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+/*
 	char buf[MAXBUF];
 	memset(buf, 0, MAXBUF);
 	int fd = open("/tmp/zig_ota", O_RDONLY);
@@ -749,6 +760,18 @@ int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		return 0;
 	}
 	return -1;
+*/
+	exit_zig_com = true;
+	while(1){
+		if(zig_com_status == false){
+			usleep(500*1000);
+			system("/home/root/fac/test_ota");
+			exit_zig_com = false;
+			init_com(on_zigbee_recv_data);
+			break;
+		}
+	}
+		return 0;
 }
 
 

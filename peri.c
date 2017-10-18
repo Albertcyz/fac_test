@@ -1,6 +1,8 @@
 #include "peri.h"
 #include "product_test.h"
 
+#define RGB_BRIGHTNESS "50"
+
 //Operation the red of RGB
 int test_rgb_r(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
@@ -13,7 +15,7 @@ int test_rgb_r(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	if(_argc == 1 && _argv && _argv[1] && atoi(_argv[1]) >= 0 && atoi(_argv[1]) <= 100)
 		write(fd, _argv[1], strlen(_argv[1]));
 	else		
-		write(fd, "100", strlen("100"));
+		write(fd, RGB_BRIGHTNESS, strlen(RGB_BRIGHTNESS));
 	close(fd);
 	//printf("RGB_R OK\n");
 	//send_message("abc");
@@ -32,7 +34,7 @@ int test_rgb_g(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	if(_argc == 1 && _argv && _argv[1] && atoi(_argv[1]) >= 0 && atoi(_argv[1]) <= 100)
 		write(fd, _argv[1], strlen(_argv[1]));
 	else		
-		write(fd, "100", strlen("100"));
+		write(fd, RGB_BRIGHTNESS, strlen(RGB_BRIGHTNESS));
 	close(fd);
 	//printf("RGB_G OK\n");
 	return 0;
@@ -51,7 +53,7 @@ int test_rgb_b(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	if(_argc == 1 && _argv && _argv[1] && atoi(_argv[1]) >= 0 && atoi(_argv[1]) <= 100)
 		write(fd, _argv[1], strlen(_argv[1]));
 	else		
-		write(fd, "100", strlen("100"));
+		write(fd, RGB_BRIGHTNESS, strlen(RGB_BRIGHTNESS));
 	close(fd);
 	//printf("RGB_B OK\n");
 	return 0;
