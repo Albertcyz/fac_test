@@ -12,6 +12,7 @@
 #include <fcntl.h>
 #include <stdarg.h>
 #include "wifi.h"
+#include <termios.h>
 
 #define READ_KEY system("memtool -16 20A0000 1 | cut -d ':' -f 2 -s | cut -c 3 > /tmp/key_enter_test")
 #define RM_PCBA_TEST_OK system("rm /home/root/fac/pcba_test_ok")
@@ -81,6 +82,8 @@ void cmd_init_uart(void)
 	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
+	add_to_cmd_list("set_wifi_mac_rtw", 2, set_wifi_mac_rtw, "set wifi mac for realtek modual.");
+	add_to_cmd_list("set_wifi_modual", 2, set_wifi_modual, "set wifi modual.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
 	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
@@ -315,7 +318,9 @@ int key_enter_test()
 				break;
 			}
 			if((!_timer2.end()) && (key_count == 5)){
-				system("/home/root/fac/wifi_ap");
+				char buf[MAXBUF] = {0};
+				sprintf(buf, "/home/root/fac/wifi_ap %s", wifi_ap_interface);
+				system(buf);
 				while(1){
 					test_rgb_close(NULL, 0, NULL);
 					usleep(500*1000);
@@ -396,6 +401,23 @@ void *udp_output(void *arg)
 	}
 }
 
+int backspace_display()
+{
+	struct termios term;
+    if(-1 == tcgetattr(STDIN_FILENO,&term))
+    {
+        printf("error is %s\n");
+        return -1;
+    }
+
+
+    term.c_cc[VERASE] = '\b';
+    if(-1 == tcsetattr(STDIN_FILENO,TCSANOW,&term))
+    {
+        printf("Error\n");
+    }
+}
+
 #if 1
 
 int main()
@@ -404,7 +426,7 @@ int main()
 
 	key_enter_test();
 
-	test_rgb_close(NULL, 0, NULL);
+	//test_rgb_close(NULL, 0, NULL);
 	
 	//Create the key exit pthread
 	pthread_t key_exit_id;
@@ -412,12 +434,17 @@ int main()
 	
 	//Enter pcba test
 	if(access(PCBA_TEST_OK, F_OK) != 0){
+		test_rgb_close(NULL, 0, NULL);
+		
 		pcba_test_flag = true;
 		cmd_init_uart();
 		//usleep(1000*1000);
 		init_zigbee();
 
+		get_network();
+
 		system("stty erase ^H");
+		
 		printf("Enter PCBA Test...\n");
 
 		while(1){
@@ -430,7 +457,10 @@ int main()
 
 	//Enter procudt test
 	if(access(PRO_TEST_OK, F_OK) != 0){
-
+		test_rgb_close(NULL, 0, NULL);
+		
+		pro_test_flag = true;
+		
 		system("ifconfig wlan0 up");
 		system("ifconfig mlan0 up");
 		//system("ifconfig uap0 up");
@@ -449,7 +479,6 @@ int main()
 		char mac_ip[100];
 	
 		printf("Enter Product Test...\n");
-		pro_test_flag = true;
 		cmd_init_udp();
 		init_zigbee();
 

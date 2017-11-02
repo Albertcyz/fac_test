@@ -1,0 +1,57 @@
+#!/bin/sh -e
+
+cd /home/root
+
+insmod /home/root/8189es.ko
+insmod /home/root/8723bs.ko
+
+echo 2 >/proc/sys/kernel/printk
+echo 30000 >  /proc/sys/vm/min_free_kbytes
+echo -e "\033[9;0]" > /dev/tty0
+echo 0 > /sys/bus/platform/drivers/imx_busfreq/soc\:busfreq/enable
+
+/home/root/fac/fac_test
+
+if [ -f "/home/root/fac/pcba_test_ok" ] && [ -f "/home/root/fac/pro_test_ok" ]; then
+
+ifconfig wlan0
+
+chmod +x /home/root/gw
+chmod +x /home/root/key_rgb
+chmod +x /home/root/wifi_capture
+chmod +x /home/root/mp3_player
+sleep 1
+#iwconfig wlan0 mode monitor
+#iwconfig wlan0 mode monitor
+if [ -f "/home/root/router_ssid" ]; then
+    iwconfig wlan0 mode managed
+    ifconfig wlan0
+else
+    iwconfig wlan0 mode monitor
+    ifconfig wlan0
+fi
+ifconfig wlan0
+
+/home/root/mp3_player &
+sleep 1
+/home/root/key_rgb &
+sleep 1
+/home/root/wifi_capture &
+#sleep 6
+/home/root/gw &
+
+#killall /home/root/wifi_capture
+#sleep 1
+#/home/root/wifi_capture &
+
+ifconfig wlan0
+
+file="/home/root/wifi_capture"
+if [ ! -f "$file" ]; then
+  echo "no this file"
+fi
+fi
+exit 0
+
+#/home/root/wifi_start.sh
+#gst-launch-1.0 playbin uri=file:///usr/angel.mp3 

@@ -24,7 +24,7 @@ struct sockaddr_in sock_from = {0};
 
 int send_message(char *buf);
 
-
+/*
 int get_local_ip_mac(char *buf_ip, char *buf_mac)
 {
 	struct sockaddr_in *local_ip;
@@ -71,6 +71,7 @@ int get_local_ip_mac(char *buf_ip, char *buf_mac)
 	}
 	close(sockfd);
 }
+*/
 
 void *udp_broadcast(void *arg)
 {
