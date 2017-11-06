@@ -673,8 +673,8 @@ int zig_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]){
 int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	int i = 60;
-	allow_join(i);
-	//allow_join_in_factory_mode();
+	//allow_join(i);
+	allow_join_in_factory_mode();
 	printf("Joining...\n");
 	timeout _timeout((i-1)*1000);
 	_timeout.start();
@@ -768,6 +768,7 @@ int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			system("/home/root/fac/test_ota");
 			exit_zig_com = false;
 			init_com(on_zigbee_recv_data);
+			usleep(500*1000);
 			break;
 		}
 	}

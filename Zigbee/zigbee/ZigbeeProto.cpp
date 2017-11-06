@@ -18,6 +18,7 @@
 #include <ctime> 
 #include <math.h>
 //#include <unistd.h>
+#include "../../Command.h"
 
 #include "../Config.h"
 #ifdef __WIN32__
@@ -884,7 +885,11 @@ void report_onoff_status(uint8_t *data, int len)
 	else 
 		report_onoff_sensor_status(data, len);
 	
-	
+	int pv = data[10];
+
+	if(pv == 3){
+		pro_test_flag = true;
+	}
 #if 0	
 	uint32_t attrId = get_zigbee_uint16(&data[7]);
 	

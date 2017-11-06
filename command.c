@@ -61,6 +61,8 @@ void cmd_init_uart(void)
 {
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
+	memset(&gobal_cmd_list, 0, sizeof(gobal_cmd_list));
+	printf("gobal_cmd_list size %d\n", sizeof(gobal_cmd_list));
 	add_to_cmd_list("help", 2, cmd_help, "Print help.");
 	add_to_cmd_list("ver", 2, version, "Get fireware version.");
 	//add_to_cmd_list("help_s", 2, cmd_help_socket, "Print help.");
@@ -100,6 +102,7 @@ void cmd_init_udp(void)
 {
 	//use the func "add_to_cmd_list" add the command at here
 	int i = 0;
+	memset(&gobal_cmd_list, 0, sizeof(gobal_cmd_list));
 	//add_to_cmd_list("help", 2, cmd_help, "Print help.");
 	add_to_cmd_list("help", 2, cmd_help_socket, "Print help.");
 	add_to_cmd_list("ver", 2, version, "Get fireware version.");
@@ -368,6 +371,9 @@ void *key_exit(void *arg)
 					}
 					if(read(fd, &key, sizeof(key)) == sizeof(key) && _time.end()){
 						close(fd);
+						if(access("/home/root/music/add_sensor.mp3", F_OK) == 0)
+							play_music("/home/root/music/add_sensor.mp3", 0.2);
+						allow_join_in_factory_mode();
 						break;
 					}
 				}
@@ -418,6 +424,94 @@ int backspace_display()
     }
 }
 
+void *enter_pcba_test(void *arg)
+{
+	test_rgb_close(NULL, 0, NULL);
+		
+	pcba_test_flag = true;
+	cmd_init_uart();
+		//usleep(1000*1000);
+	//init_zigbee();
+
+	get_network();
+
+	system("stty erase ^H");
+		
+	printf("Enter PCBA Test...\n");
+	while(1){
+			printf("Input cmd:");
+			get_cmd_from_uart(cmd_from_input, MAXINPUTCHAR);
+			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
+			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
+			//return 0;
+		}
+}
+
+void *enter_pro_test(void *arg)
+{
+	test_rgb_close(NULL, 0, NULL);
+			
+	pro_test_flag = true;
+			
+	system("ifconfig wlan0 up");
+	system("ifconfig mlan0 up");
+	//system("ifconfig uap0 up");
+	system("ifconfig");
+	
+	//usleep(1000*1000);
+			
+	get_network();
+	printf("net inf:%s\n", network_interface);
+	
+	//Link wifi
+	char sta[100];
+	sprintf(sta, "/home/root/fac/link_wifi %s", network_interface);
+	system(sta);
+			
+	char mac_ip[100];
+		
+	printf("Enter Product Test...\n");
+	cmd_init_udp();
+	//init_zigbee();
+	
+	//printf("net inf:%s\n", network_interface);
+			
+	get_local_ip_mac(local_ip, local_mac);
+			
+	//printf(mac_ip, "%s:%s\n", local_mac, local_ip);
+	sprintf(mac_ip, "%s:%s", local_mac, local_ip);
+			
+	pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
+	pthread_detach(udp_broadcast_id);
+	pthread_create(&udp_cmd_id, NULL, get_cmd_from_udp, (void *)cmd_from_input);
+	pthread_detach(udp_cmd_id);
+	pthread_t output_id;
+	pthread_create(&output_id, NULL, udp_output, NULL);
+	pthread_detach(output_id);
+	
+	//int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+	//dup2(fd, 1);
+	//close(fd);
+	
+	while(1){
+		if(exit_broadcast == true){
+			int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
+			dup2(fd, 1);
+			close(fd);
+			break;
+		}
+	}
+	
+	while(1){
+		if(cmd_from_input[1] != '\0' && exit_broadcast){
+			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
+			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
+			memset(cmd_from_input, '\0', MAXINPUTCHAR);
+		}
+	}
+}
+
+
 #if 1
 
 int main()
@@ -433,7 +527,8 @@ int main()
 	pthread_create(&key_exit_id, NULL, key_exit, NULL);
 	
 	//Enter pcba test
-	if(access(PCBA_TEST_OK, F_OK) != 0){
+	if((access(PCBA_TEST_OK, F_OK) != 0) || (access(PRO_TEST_OK, F_OK) != 0)){
+		/*
 		test_rgb_close(NULL, 0, NULL);
 		
 		pcba_test_flag = true;
@@ -446,15 +541,30 @@ int main()
 		system("stty erase ^H");
 		
 		printf("Enter PCBA Test...\n");
-
+		
 		while(1){
 			printf("Input cmd:");
 			get_cmd_from_uart(cmd_from_input, MAXINPUTCHAR);
 			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
 		}
+		*/
+		init_zigbee();
+		pthread_t enter_pcba_id;
+		pthread_create(&enter_pcba_id, NULL, enter_pcba_test, NULL);
+		pthread_t enter_pro_id;
+		//pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+		while(1){
+			if(pro_test_flag == true){
+				pthread_cancel(enter_pcba_id);
+				usleep(500*1000);
+				pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+				break;
+			}
+		}
+		while(1);
 	}
-
+/*
 	//Enter procudt test
 	if(access(PRO_TEST_OK, F_OK) != 0){
 		test_rgb_close(NULL, 0, NULL);
@@ -518,7 +628,7 @@ int main()
 			}
 		}
 	}
-	
+*/
 	return 0;
 }
 
