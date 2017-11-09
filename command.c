@@ -34,6 +34,7 @@ int buf_fd = -1;
 
 bool pcba_test_flag = false;
 bool pro_test_flag = false;
+bool cmd_run_status = false;
 
 
 int cmd_help(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
@@ -82,9 +83,10 @@ void cmd_init_uart(void)
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
+	add_to_cmd_list("device", 2, zig_device, "Show the device in zigbee.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
-	add_to_cmd_list("set_wifi_mac_rtw", 2, set_wifi_mac_rtw, "set wifi mac for realtek modual.");
+	add_to_cmd_list("set_wifi_mac", 2, set_wifi_mac_rtw, "set wifi mac for realtek modual.");
 	add_to_cmd_list("set_wifi_modual", 2, set_wifi_modual, "set wifi modual.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
 	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
@@ -123,6 +125,7 @@ void cmd_init_udp(void)
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
+	add_to_cmd_list("device", 2, zig_device, "Show the device in zigbee.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi_rssi", 3, wifi_rssi, "Return wifi rssi.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
@@ -363,6 +366,7 @@ void *key_exit(void *arg)
 							}
 							if(pro_test_flag){
 								close(open(PRO_TEST_OK, O_RDWR | O_CREAT));
+								system("killall udhcpc link_wifi");
 								SYNC;
 								led_blink();
 							}
@@ -371,9 +375,11 @@ void *key_exit(void *arg)
 					}
 					if(read(fd, &key, sizeof(key)) == sizeof(key) && _time.end()){
 						close(fd);
-						if(access("/home/root/music/add_sensor.mp3", F_OK) == 0)
-							play_music("/home/root/music/add_sensor.mp3", 0.2);
-						allow_join_in_factory_mode();
+						if(pro_test_flag == false){
+							allow_join_in_factory_mode();
+							if(access("/home/root/music/add_sensor.mp3", F_OK) == 0)
+								play_music("/home/root/music/add_sensor.mp3", 0.2);
+						}
 						break;
 					}
 				}
@@ -390,19 +396,28 @@ void *udp_output(void *arg)
 	int j = 0;
 	int len = 0;
 	int fd = -1;
+	char a[100];
+	//while(!cmd_run_status);
+	//system("echo 1 >> /tmp/output_buf");
 	fd = open(OUTPUT_BUF, O_RDWR | O_CREAT |  O_APPEND);
 	//if(buf_fd > 0)
 	//	write(buf_fd, "Enter product test...\n", 50);
 	while(1){
 		if(fd > 0){
+			//udp_send_status = true;
 			len = read(fd, udp_buf, MAXBUF);
-			if(len > 0 && exit_broadcast){
+			if(len > 0){
+				printf("udp_buf:%s\n", udp_buf);
+				printf("cli_ip:%s\n", cli_ip);
 				send_message(udp_buf);
+				//sprintf(a, "echo %s >> /tmp/debug", udp_buf);
 				//printf("%s", udp_buf);
 				memset(udp_buf, '\0', MAXBUF);
 				close(fd);
 				fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
+				//fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
 			}
+			//udp_send_status = false;
 		}
 	}
 }
@@ -431,7 +446,7 @@ void *enter_pcba_test(void *arg)
 	pcba_test_flag = true;
 	cmd_init_uart();
 		//usleep(1000*1000);
-	//init_zigbee();
+	init_zigbee();
 
 	get_network();
 
@@ -467,12 +482,14 @@ void *enter_pro_test(void *arg)
 	char sta[100];
 	sprintf(sta, "/home/root/fac/link_wifi %s", network_interface);
 	system(sta);
+
+	test_rgb_close(NULL, 0, NULL);
 			
 	char mac_ip[100];
 		
 	printf("Enter Product Test...\n");
 	cmd_init_udp();
-	//init_zigbee();
+	init_zigbee();
 	
 	//printf("net inf:%s\n", network_interface);
 			
@@ -481,13 +498,15 @@ void *enter_pro_test(void *arg)
 	//printf(mac_ip, "%s:%s\n", local_mac, local_ip);
 	sprintf(mac_ip, "%s:%s", local_mac, local_ip);
 			
-	pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
-	pthread_detach(udp_broadcast_id);
+	//pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
+	//pthread_detach(udp_broadcast_id);
 	pthread_create(&udp_cmd_id, NULL, get_cmd_from_udp, (void *)cmd_from_input);
 	pthread_detach(udp_cmd_id);
+	pthread_create(&udp_broadcast_id, NULL, udp_broadcast, (void *)mac_ip);
+	pthread_detach(udp_broadcast_id);
 	pthread_t output_id;
-	pthread_create(&output_id, NULL, udp_output, NULL);
-	pthread_detach(output_id);
+	//pthread_create(&output_id, NULL, udp_output, NULL);
+	//pthread_detach(output_id);
 	
 	//int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_TRUNC | O_APPEND);
 	//dup2(fd, 1);
@@ -498,15 +517,19 @@ void *enter_pro_test(void *arg)
 			int fd = open(OUTPUT_BUF, O_RDWR | O_CREAT | O_APPEND);
 			dup2(fd, 1);
 			close(fd);
+			pthread_create(&output_id, NULL, udp_output, NULL);
+			pthread_detach(output_id);
+			udp_send_status = true;
 			break;
 		}
 	}
-	
+	//usleep(1000*1000);
 	while(1){
-		if(cmd_from_input[1] != '\0' && exit_broadcast){
+		if(cmd_from_input[1] != '\0' && (udp_send_status == true)){
 			int argc = pares_cmd(cmd_from_input, &gobal_pares_cmd_argv);
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
 			memset(cmd_from_input, '\0', MAXINPUTCHAR);
+			cmd_run_status = true;
 		}
 	}
 }
@@ -549,15 +572,18 @@ int main()
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
 		}
 		*/
-		init_zigbee();
+		//init_zigbee();
 		pthread_t enter_pcba_id;
 		pthread_create(&enter_pcba_id, NULL, enter_pcba_test, NULL);
 		pthread_t enter_pro_id;
 		//pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
 		while(1){
 			if(pro_test_flag == true){
+				exit_zig_com = true;
 				pthread_cancel(enter_pcba_id);
-				usleep(500*1000);
+				pcba_test_flag = false;
+				usleep(1000*1000);
+				exit_zig_com = false;
 				pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
 				break;
 			}

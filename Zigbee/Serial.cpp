@@ -1,4 +1,4 @@
-﻿#include <stdlib.h>
+#include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include "Serial.h"
@@ -421,7 +421,6 @@ void init_com(on_com_recv_data_t on_com_recv_data)
 {
 	std::thread _com_thread(thread_comread, on_com_recv_data);
 	_com_thread.detach();
-
 }
 
 int  on_send_data_to_zigbee(char *buf, int data_len)
@@ -600,15 +599,15 @@ void  on_zig_report(string message)
 	int cur_version = GetJsonValueInt(msg, "current_version");//atoi(_current_version.c_str());
 	//int info_type = GetJsonValueInt(msg, "info_type");//strtol(_info_type.c_str(), NULL, 16);
 	int data_len = GetJsonValueInt(msg, "data_len");//atoi(_data_len.c_str());
-	char buf[1024];
+	char buf[MAXBUF];
 	
 	if(cmd == "zigbee_join"){
 		//system("gst-launch-1.0 playbin uri=file://////home//root//music//add_ok.mp3 volume=0.1 > //tmp//music");
 		if(access("/home/root/music/add_ok.mp3", F_OK) == 0){
-			play_music("/home/root/music/add_ok.mp3", 0.2);
+			play_music("/home/root/music/add_ok.mp3", 0.3);
 		}
 		else{
-			play_music("/home/root/music/join_success.mp3", 0.2);
+			play_music("/home/root/music/join_success.mp3", 0.3);
 		}
 		exit_func = true;
 		disable_join();
@@ -617,7 +616,7 @@ void  on_zig_report(string message)
 		//cout << "Join success\n" << endl;
 		//sprintf(buf, "echo %d %lld > %s", short_id, _sid, ZIG_DEV_BUF);
 		//system(buf);
-		char buf[MAXBUF];
+		//char buf[MAXBUF];
 		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
 		//cout << buf << endl;
 		ofstream zig_dev(buf);
@@ -625,12 +624,24 @@ void  on_zig_report(string message)
 			zig_dev << message << endl;
 		}
 		zig_dev.close();
+		SYNC;
 		cout << "device_id:" << _sid << endl;
 	}
 	if(cmd == "remove_device"){
 		//system("gst-launch-1.0 playbin uri=file://////home//root//music//deleted.mp3 volume=0.1 > //tmp//music");
 		if(play_music_flag == true){
 			play_music_flag = false;
+		}
+		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
+		if(access(buf, F_OK) == 0){
+			remove(buf);
+			SYNC;
+			cout << "Remove success" << endl;
+			if(play_music_flag == false){
+				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
+					play_music("/home/root/music/deleted.mp3", 0.3);
+				play_music_flag = true;
+			}
 		}
 	}
 }
@@ -683,11 +694,12 @@ int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			disable_join();
 			//system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
 			if(access("/home/root/music/join_gateway_fail.mp3", F_OK) == 0)
-				play_music("/home/root/music/join_gateway_fail.mp3", 0.2);
+				play_music("/home/root/music/join_gateway_fail.mp3", 0.3);
 			cout << "Join fail\n" << endl;
 			break;
 		}
 	}
+	usleep(500*1000);
 	exit_func = false;
 	return 0;
 }
@@ -712,15 +724,20 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			sid = sid_str_2_uint64(_sid);
 			zig_dev.close();
 			remove(dev_buf);
+			SYNC;
+			remove_zigbee_device(short_id, sid);
 			if(play_music_flag == false){
 				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
-					play_music("/home/root/music/deleted.mp3", 0.2);
+					play_music("/home/root/music/deleted.mp3", 0.3);
+				usleep(1000*1000);
 				cout << "Remove success" << endl;
 				play_music_flag = true;
 			}
 		}
 	}
-	remove_zigbee_device(short_id, sid);
+	//remove_zigbee_device(short_id, sid);
+	else
+		cout << "Remove fail" << endl;
 }
 
 int get_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
@@ -765,15 +782,23 @@ int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	while(1){
 		if(zig_com_status == false){
 			usleep(500*1000);
-			system("/home/root/fac/test_ota");
-			exit_zig_com = false;
-			init_com(on_zigbee_recv_data);
-			usleep(500*1000);
-			break;
+			if(zig_com_status == false){
+				system("/home/root/fac/test_ota");
+				exit_zig_com = false;
+				init_com(on_zigbee_recv_data);
+				usleep(1000*1000);
+				break;
+			}
 		}
 	}
 		return 0;
 }
 
+int zig_device(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	//printf("Device ID:\n");
+	system("cat /home/root/fac/158*.conf | cut -d ',' -f 2-3 | cut -d \"\\\"\" -f 4,8 | tr '\"' ':'");
+	return 0;
+}
 
 

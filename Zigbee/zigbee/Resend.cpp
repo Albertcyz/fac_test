@@ -344,7 +344,7 @@ bool add_to_resend_queue(uint8_t seq_no)
 void delete_in_resend_list(uint8_t seq_no)
 {
 
-	printf("receive the seq_no is %d\n",seq_no);
+	//printf("receive the seq_no is %d\n",seq_no);
 	
 	zig_msg_buff_t * msg_buf = get_buff_item_by_seqnum(seq_no);
 	resend_lock.lock();

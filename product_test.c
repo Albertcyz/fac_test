@@ -10,6 +10,7 @@
 #include <net/if.h>
 #include <pthread.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include "Wifi.h"
 
 
@@ -20,7 +21,12 @@ pthread_t udp_cmd_id, udp_broadcast_id;
 
 
 bool exit_broadcast = false;
+bool udp_send_status = false;
+
 struct sockaddr_in sock_from = {0};
+
+char cli_ip[50] = {0};
+
 
 int send_message(char *buf);
 
@@ -125,7 +131,7 @@ void *get_cmd_from_udp(void *arg)
 	char buf[MAXINPUTCHAR];
 	size_t rev_len = 0;
 	socklen_t len;
-	char cli_ip[50];
+	//char cli_ip[50] = {0};
 	
 	if((udp_fd = socket(AF_INET, SOCK_DGRAM, 0)) == -1){
 		perror("udp_fd socket");
@@ -151,6 +157,7 @@ void *get_cmd_from_udp(void *arg)
 
 	while(1){
 		memset(buf, 0, MAXINPUTCHAR);
+		len = sizeof(struct sockaddr_in);
 		rev_len = recvfrom(udp_fd, buf, MAXINPUTCHAR, 0, \
 						  (struct sockaddr*)&sock_from, (socklen_t*)&len);
 
@@ -170,15 +177,40 @@ void *get_cmd_from_udp(void *arg)
 
 int send_message(char *buf)
 {
-	if(udp_fd > 0 && buf){
-		sendto(udp_fd, buf, strlen(buf), 0, \
-				(const struct sockaddr *)&sock_from, sizeof(sock_from));
-		return 0;
-	}
-	else{
-		//printf("udp_fd is not exist\n");
+	//system("echo 2 >> /tmp/output_buf");
+	while(udp_fd == -1);
+	while(cli_ip[1] == 0);
+	if(!buf){
 		return -1;
 	}
+	char buf_s[MAXBUF] = {0};
+	char *send_b = buf_s;
+	int i = 0;
+	
+	memcpy(buf_s, buf, MAXBUF);
+
+	for(;i < MAXBUF; i++){
+		if(buf_s[i] == '\n'){
+			buf_s[i] = '\0';
+			if(udp_fd > 0){
+					sendto(udp_fd, send_b, strlen(send_b), 0, \
+							(const struct sockaddr *)&sock_from, sizeof(sock_from));
+			}
+			if((i + 1) < MAXBUF && buf_s[i + 1] != '\0'){
+				send_b = &buf_s[i + 1];
+			}
+		}
+		else if(buf_s[i] == '\0'){
+			break;
+		}
+	}
+/*	
+	if(udp_fd > 0){
+		sendto(udp_fd, buf_s, strlen(buf_s), 0, \
+				(const struct sockaddr *)&sock_from, sizeof(sock_from));
+*/
+		return 0;
+//	}
 }
 
 #if 0

@@ -1,6 +1,20 @@
 #!/bin/bash
 
-/home/root/fac/led_blink &
+#/home/root/fac/led_blink &
+
+led_blink(){
+	while [ "1" == "1" ];
+	do
+
+        echo 50 > /sys/class/backlight/lumi_r/brightness
+        sleep 0.1
+        echo 0 > /sys/class/backlight/lumi_r/brightness
+        sleep 0.1
+
+	done
+}
+
+led_blink &
 
 ifconfig $1 down
 ifconfig $1 up
@@ -11,6 +25,6 @@ wpa_supplicant -B -Dnl80211 -i $1 -c/home/root/fac/wpa_supplicant.conf
 
 udhcpc -i $1
 
-killall led_blink
+killall link_wifi
 
 echo 0 > /sys/class/backlight/lumi_r/brightness

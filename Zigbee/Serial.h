@@ -6,6 +6,21 @@
 #include "Config.h"
 #include "../command.h"
 #include "../peri.h"
+#include "json.hpp"
+
+
+#include <stdlib.h>
+#include <fcntl.h>
+#include <stdio.h>
+
+#include <iostream>
+#include <string>
+
+using namespace std;
+using nlohmann::json;
+
+
+
 
 
 #if defined(__WIN32__) 
@@ -80,6 +95,10 @@ typedef struct {
     const char* model_cloud; 
 } device_model_name_t;
 
+extern bool exit_zig_com;
+
+string GetJsonValueString(json &data, string key);
+
 void init_zigbee();
 
 int zig_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
@@ -89,6 +108,4 @@ int get_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int cal_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
-
-
-
+int zig_device(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);

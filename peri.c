@@ -122,7 +122,7 @@ int play_music(char *music_name, float volume)
 		return -1;
 	if(volume > 1 || volume < 0)
 		volume = 0;
-	sprintf(name, "gst-launch-1.0 playbin uri=file:////%s volume=%f > //tmp//music &", \
+	sprintf(name, "gst-launch-1.0 playbin uri=file:///%s volume=%f gst-debug-level=0 > /tmp/music &", \
 			music_name, volume);
 	system(name);
 	return 0;
@@ -132,7 +132,7 @@ int play_music(char *music_name, float volume)
 //Test speaker
 int test_speaker(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	play_music("//home//root//fac//1khz.wav", 0.3);
+	play_music("/home/root/fac/1khz.wav", 0.3);
 	printf("Playing OK\n");
 
 	return 0;

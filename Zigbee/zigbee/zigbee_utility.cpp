@@ -5,8 +5,17 @@
 #include "zigbee_enum.h"
 #include "zigbeeInterface.h"
 #include <map>
+#include <fstream>
+
+#include "../../command.h"
+#include "../json.hpp"
+#include "../Serial.h"
+
+
 
 using namespace std;
+using nlohmann::json;
+
 
 //#include 
 
@@ -218,6 +227,7 @@ uint64_t get_zigbee_uint64(uint8_t *data)
 
  uint32_t get_model_key(string st_model)
  {
+ 	//cout << "st_model:" << st_model << endl;
 	 if(st_model.length() ==0) {
 		 st_model = string("unknow");
 	 }
@@ -307,6 +317,7 @@ uint16_t get_zigbee_short_id(uint64_t device_id)
 static std::map<uint16_t /*short_id*/, uint32_t> deviceModelMap;
 string get_model(int short_id)
 {
+#if 0
 	//return string("plug");
 	std::map<uint16_t /*short_id*/, uint32_t>::iterator it = deviceModelMap.find((uint16_t)short_id);
 	if(it != deviceModelMap.end()) {
@@ -330,6 +341,32 @@ string get_model(int short_id)
 //			onReport("get_model:unknow", 15 );
 //		}
 		return model_name;
+	}
+#endif
+	char buf_file[MAXBUF];
+	char buf[MAXBUF];
+	sprintf(buf, "grep -rl %d /home/root/fac/ > /tmp/get_model", short_id);
+	system(buf);
+	ifstream zig_dev_patch("/tmp/get_model");
+	//cout << "123" << endl;
+	if(zig_dev_patch.is_open()){
+			zig_dev_patch.getline(buf_file, MAXBUF);
+			//cout << buf << endl;
+			zig_dev_patch.close();
+			//cout << "buf_file:" << buf_file << endl;
+			if(buf_file[0] != '/'){
+				//cout << "no file" << endl;
+				return string("unknow");
+			}
+			ifstream zig_dev(buf_file);
+			if(zig_dev.is_open()){
+				zig_dev.getline(buf, MAXBUF);
+				json msg = json::parse(buf);
+				string model = GetJsonValueString(msg, "model");
+				//cout << "model:" << model << endl;
+				zig_dev.close();
+				return model;
+			}
 	}
 }
 
@@ -366,7 +403,7 @@ static char cvtIn[] = {
 		20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
 		30, 31, 32, 33, 34, 35
 };
-unsigned long long _strtoull(char *pdata)
+unsigned long long s_strtoull(char *pdata)
 {
 	char *p = pdata;
 	unsigned long long int result = 0;
@@ -398,7 +435,7 @@ unsigned long long _strtoull(char *pdata)
 
 uint64_t string_to_uint64(string st_value)
 {
-	return _strtoull((char*)st_value.c_str());
+	return s_strtoull((char *)st_value.c_str());
 }
 
 //后面用到了stringstream 才把问题解决，包含头文件<sstream>
