@@ -20,9 +20,11 @@
 #define SN_HD_FILE "/home/root/fac/sn_hw.conf"
 
 #define SETUP_CODE_DIR "/home/root/hkbridge"
-#define SETUP_CODE "/home/root/hkbridge/setup_code_verifier.dat"
+#define SETUP_CODE "/home/root/hkbridge/setupinfo"
 
-#define SYNC system("sync")
+#define DID_FILE "/lumi/conf/device.conf"
+
+#define SYNC system("sync &")
 
 int play_music(char *music_name, float volume);
 
@@ -49,5 +51,8 @@ int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+
+int set_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int get_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 #endif

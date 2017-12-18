@@ -83,7 +83,7 @@ void cmd_init_uart(void)
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
-	add_to_cmd_list("device", 2, zig_device, "Show the device in zigbee.");
+	add_to_cmd_list("devices", 2, zig_device, "Show the device in zigbee.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi", 3, wifi_rssi, "Return wifi rssi.");
 	add_to_cmd_list("set_wifi_mac", 2, set_wifi_mac_rtw, "set wifi mac for realtek modual.");
@@ -94,6 +94,8 @@ void cmd_init_uart(void)
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
 	add_to_cmd_list("setup_code", 2, setup_code, "Set homekit setup code.");
 	add_to_cmd_list("get_setup_code", 2, get_setup_code, "get homekit setup code.");
+	add_to_cmd_list("set_did", 7, set_mi_did, "set mi did key mac model.");
+	add_to_cmd_list("get_did", 2, get_mi_did, "get mi did key mac model.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
 	add_to_cmd_list("exit_factory", 2, exit_test, "Exit test.");
 	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
@@ -125,13 +127,17 @@ void cmd_init_udp(void)
 	add_to_cmd_list("cali_temp", 3, cal_zig_temperature, "Cal zigbee temperature.");
 	add_to_cmd_list("test_zig_rf", 3, test_zig_rf, "Test zigbee rf.");
 	add_to_cmd_list("test_ota", 3, test_zig_ota, "Test zigbee ota.");
-	add_to_cmd_list("device", 2, zig_device, "Show the device in zigbee.");
+	add_to_cmd_list("devices", 2, zig_device, "Show the device in zigbee.");
 	add_to_cmd_list("wifi_mac", 3, get_wifi_mac, "Return wifi mac.");
 	add_to_cmd_list("wifi_rssi", 3, wifi_rssi, "Return wifi rssi.");
 	add_to_cmd_list("set_sn", 2, set_sn, "Set soft version,usage:set_sn 123456.");
 	add_to_cmd_list("get_sn", 2, get_sn, "Get soft version.");
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
+	add_to_cmd_list("set_did", 7, set_mi_did, "set mi did key mac model.");
+	add_to_cmd_list("get_did", 2, get_mi_did, "get mi did key mac model.");
+	add_to_cmd_list("setup_code", 2, setup_code, "Set homekit setup code.");
+	add_to_cmd_list("get_setup_code", 2, get_setup_code, "get homekit setup code.");
 	add_to_cmd_list("nfc_poll", 2, nfc_poll, "NFC polling.");
 	add_to_cmd_list("exit_factory", 2, exit_test, "Exit test.");
 	add_to_cmd_list("test_ok", 2, test_ok, "Create the test ok file and exit test.");
@@ -173,7 +179,7 @@ int pares_cmd(char *line, pares_cmd_tbl *_argv)
 		
 		_argv->argv[nargs++] = line;
 
-		while(*line && *line != ' ' && *line != ':' && *line != ',')
+		while(*line && *line != ' ' && (*line != ':' || nargs != 1) && *line != ',')
 			++line;
 
 		if(*line == '\0'){
@@ -211,7 +217,7 @@ int run_cmd(cmd_tbl_s *_cmd, pares_cmd_tbl *_argv)
 	return 0;
 }
 
-void led_blink()
+void *led_blink(void *arg)
 {
 	test_rgb_r(NULL, 0, NULL);
 	usleep(200*1000);
@@ -267,14 +273,20 @@ int key_enter_test()
 	//if(access(PCBA_TEST_OK, F_OK)  && access(PRO_TEST_OK, F_OK))
 		//return 0;
 	if(read_key_bit() == 1){
-		usleep(100*1000);
+		usleep(200*1000);
+	}
+	if(read_key_bit() == 1){
+		usleep(200*1000);
+	}
+	if(read_key_bit() == 1){
+		usleep(200*1000);
 	}
 	if(read_key_bit() == 0){
 		//printf("key bit = 1\n");
 		_timer.start();
 		while(1){
 			//printf("%d\n", _timer.end());
-			led_blink();
+			led_blink(NULL);
 			if(!_timer.end())
 				break;
 			if(read_key_bit())
@@ -362,13 +374,13 @@ void *key_exit(void *arg)
 							if(pcba_test_flag){
 								close(open(PCBA_TEST_OK, O_RDWR | O_CREAT));
 								SYNC;
-								led_blink();
+								led_blink(NULL);
 							}
 							if(pro_test_flag){
 								close(open(PRO_TEST_OK, O_RDWR | O_CREAT));
 								system("killall udhcpc link_wifi");
 								SYNC;
-								led_blink();
+								led_blink(NULL);
 							}
 							exit(0);
 						}
@@ -377,6 +389,7 @@ void *key_exit(void *arg)
 						close(fd);
 						if(pro_test_flag == false){
 							allow_join_in_factory_mode();
+							test_rgb_white(NULL, 0, NULL);
 							if(access("/home/root/music/add_sensor.mp3", F_OK) == 0)
 								play_music("/home/root/music/add_sensor.mp3", 0.2);
 						}
@@ -574,22 +587,36 @@ int main()
 		*/
 		//init_zigbee();
 		pthread_t enter_pcba_id;
-		pthread_create(&enter_pcba_id, NULL, enter_pcba_test, NULL);
 		pthread_t enter_pro_id;
+		pthread_t led_blink_id;
+		
+		pthread_create(&enter_pcba_id, NULL, enter_pcba_test, NULL);
+		pthread_create(&led_blink_id, NULL, led_blink, NULL);
+		
 		//pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+#if 1
 		while(1){
 			if(pro_test_flag == true){
 				exit_zig_com = true;
 				pthread_cancel(enter_pcba_id);
 				pcba_test_flag = false;
-				usleep(1000*1000);
+				usleep(100*1000);
 				exit_zig_com = false;
-				pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+				//pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+				system("touch /lumi/conf/factory_add_scene");
+				system("echo ssid=\\\"aq_hub_miio_default\\\" > /lumi/conf/wifi.conf");
+				system("echo psk=\\\"123456789\\\" >> /lumi/conf/wifi.conf");
+				system("echo key_mgmt=WPA-PSK >> /lumi/conf/wifi.conf");
+				system("cp /home/root/fac/wpa_supplicant.conf /etc/wpa_supplicant.conf");
+				system("/home/root/fac/pro.sh");
 				break;
 			}
 		}
+#endif
 		while(1);
+		//enter_pcba_test(NULL);
 	}
+
 /*
 	//Enter procudt test
 	if(access(PRO_TEST_OK, F_OK) != 0){

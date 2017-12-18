@@ -122,7 +122,7 @@ int play_music(char *music_name, float volume)
 		return -1;
 	if(volume > 1 || volume < 0)
 		volume = 0;
-	sprintf(name, "gst-launch-1.0 playbin uri=file:///%s volume=%f gst-debug-level=0 > /tmp/music &", \
+	sprintf(name, "gst-launch-1.0 playbin uri=file:///%s volume=%f gst-debug-level=0 &> /tmp/music &", \
 			music_name, volume);
 	system(name);
 	return 0;
@@ -205,10 +205,12 @@ int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+	char buf[MAXBUF] = {0};
 	if(_argv[1] == NULL){
 		printf("Set_sn fail\n");
 		return -1;
 	}
+#if 0
 	int fd = open(SN_FILE, O_RDWR | O_CREAT | O_TRUNC);
 	if(fd > 0){
 		write(fd, _argv[1], strlen(_argv[1]));
@@ -219,10 +221,18 @@ int set_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	}
 	else
 		return -1;
+#endif
+	sprintf(buf, "echo SN=%s >> /etc/os-release", _argv[1]);
+	//printf("%s\n", buf);
+	system("sed -i \"/SN=/d\" /etc/os-release");
+	system(buf);
+	printf("Set sn success\n");
+	SYNC;
 }
 
 int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+#if 0
 	char buf[MAXBUF] = {'\0'};
 	if(access(SN_FILE, F_OK) == 0){
 		int fd = open(SN_FILE, O_RDONLY);
@@ -237,14 +247,19 @@ int get_sn(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		return -1;
 	}
 	return 0;
+#endif
+	system("cat /etc/os-release | grep SN | tr '=' ':' | tr 'A-Z' 'a-z'");
 }
 
 int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+	char buf[MAXBUF] = {0};
+	
 	if(_argv[1] == NULL){
 		printf("Set hd_ver fail\n");
 		return -1;
 	}
+#if 0
 	int fd = open(SN_HD_FILE, O_RDWR | O_CREAT | O_TRUNC);
 	if(fd > 0){
 		write(fd, _argv[1], strlen(_argv[1]));
@@ -255,10 +270,18 @@ int set_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	}
 	else
 		return -1;
+#endif
+	sprintf(buf, "echo HARDWARE_VERSION=%s >> /etc/os-release", _argv[1]);
+	//printf("%s\n", buf);
+	system("sed -i \"/HARDWARE_VERSION=/d\" /etc/os-release");
+	system(buf);
+	SYNC;
+	printf("Set hd_ver success\n");
 }
 
 int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
+#if 0
 	char buf[MAXBUF] = {'\0'};
 	if(access(SN_HD_FILE, F_OK) == 0){
 		int fd = open(SN_HD_FILE, O_RDONLY);
@@ -274,6 +297,8 @@ int get_hd_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		return -1;
 	}
 	return 0;
+#endif
+	system("cat /etc/os-release | grep HARDWARE_VERSION | cut -d '=' -f 2");
 }
 
 //exit
@@ -309,9 +334,10 @@ int reboot(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int version(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	system("cat /home/root/fac/version");
+	system("cat /etc/os-release | grep LUMI_VERSION | cut -d '=' -f 2");
 }
 
+#if 0
 int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	if(_argv[1] == NULL){
@@ -340,6 +366,30 @@ int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		printf("success\n");
 	}
 }
+#endif
+
+int setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	if(_argv[1] == NULL){
+		printf("fail\n");
+		return -1;
+	}
+	if(access(SETUP_CODE_DIR, F_OK) != 0){
+		char buf[MAXBUF];
+		sprintf(buf, "mkdir %s", SETUP_CODE_DIR);
+		system(buf);
+	}
+	
+	char buf[MAXBUF] = {0};
+	int i = 0;
+	int fd = open(SETUP_CODE, O_RDWR | O_CREAT | O_TRUNC);
+	if(fd > 0){
+		sprintf(buf, "%s", _argv[1]);
+		write(fd, buf, strlen(buf));
+	}
+	close(fd);
+	printf("success\n");
+}
 
 int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
@@ -354,6 +404,38 @@ int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		close(fd);
 		return 0;
 	}
+}
+
+int set_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf[MAXBUF] = {0};
+	int i = 1;
+	if (_argv[1] == NULL){
+		printf("fail\n");
+		return -1;
+	}
+	for(i = 1; i < 6; i++){
+		if(i == 1){
+			sprintf(buf, "echo %s > %s", _argv[i], DID_FILE);
+		}
+		else{
+			sprintf(buf, "echo %s >> %s", _argv[i], DID_FILE);
+		}
+		//printf("%s:%s\n", _argv[i], buf);
+		system(buf);
+	}
+	//printf("setting music...\n");
+	system("/home/root/fac/set_firmware.sh &");
+	SYNC;
+	printf("success\n");
+	return 0;
+}
+
+int get_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	char buf[MAXBUF] = {0};
+	sprintf(buf, "cat %s", DID_FILE);
+	system(buf);
 }
 
 

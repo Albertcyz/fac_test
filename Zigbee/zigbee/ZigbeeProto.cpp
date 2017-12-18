@@ -756,8 +756,8 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 				else if(pv ==2)
 					event = string("double_click");
 				else if(pv == 3){
-					cout << "Enter pro test" << endl;
-					pro_test_flag = true;
+					//cout << "Enter pro test" << endl;
+					//pro_test_flag = true;
 				}
 				break;
 
@@ -891,9 +891,10 @@ void report_onoff_status(uint8_t *data, int len)
 	
 	int pv = data[10];
 
-	//if(pv == 3){
-	//	pro_test_flag = true;
-	//}
+	if(pv == 3){
+		cout << "Enter pro test" << endl;
+		pro_test_flag = true;
+	}
 #if 0	
 	uint32_t attrId = get_zigbee_uint16(&data[7]);
 	

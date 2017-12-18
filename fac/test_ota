@@ -19,7 +19,7 @@ fi
 	
 
 if [ $# == 0 ]; then
-	a=`/home/root/iot_jp -s /dev/ttymxc1 -t | grep "MAC" -A 1`
+	a=`/home/root/iot_jp -s /dev/ttymxc1 -t 2> /tmp/null | grep "MAC" -A 1`
 	if [ ! -n "$a" ];then
 		echo "Fail"
 	else

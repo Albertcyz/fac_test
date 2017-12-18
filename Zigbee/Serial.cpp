@@ -579,7 +579,7 @@ uint32_t model_zigbee_to_num(const char* model_str)
 
 void  on_zig_report(string message)
 {
-	//cout << message << endl;
+	cout << message << endl;
 	json msg = json::parse(message.c_str());
 	
 	string cmd = GetJsonValueString(msg, "cmd");
@@ -626,15 +626,20 @@ void  on_zig_report(string message)
 		zig_dev.close();
 		SYNC;
 		cout << "device_id:" << _sid << endl;
+		sprintf(buf, "echo \"{\\\"%lld\\\":{\\\"0\\\":%d,\\\"1\\\":%d,\\\"2\\\":0,\\\"3\\\":0,\\\"4\\\":0,\\\"5\\\":\\\"%s\\\"}}\" > /lumi/conf/dev_cfg.conf", 
+				sid, short_id, model_id, model.c_str());
+		//printf("%s\n", buf);
+		system(buf);
+		SYNC;
 	}
 	if(cmd == "remove_device"){
 		//system("gst-launch-1.0 playbin uri=file://////home//root//music//deleted.mp3 volume=0.1 > //tmp//music");
 		if(play_music_flag == true){
 			play_music_flag = false;
 		}
-		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
-		if(access(buf, F_OK) == 0){
-			remove(buf);
+		//sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
+		if(access(ZIG_DEV_CONF, F_OK) == 0){
+			remove(ZIG_DEV_CONF);
 			SYNC;
 			cout << "Remove success" << endl;
 			if(play_music_flag == false){
@@ -677,7 +682,19 @@ void init_zigbee()
 int zig_ver(cmd_tbl_s *_cmd, int _argc, char *const _argv[]){
 	get_dongle_fw_version();
 	usleep(100*1000);
-	printf("ver:%s\n", get_dongle_fw_version());
+	char *ver_from_zig = NULL;
+	char buf[MAXBUF] = {0};
+	int ver = 0;
+
+	ver_from_zig = get_dongle_fw_version();
+	
+	printf("ver:%s\n", ver_from_zig);
+	ver = (int)(atof(ver_from_zig) * 100);
+	sprintf(buf, "echo MCU_FW_VERSION=0%d >> /etc/os-release", ver);
+	//printf("%s\n", buf);
+	system("sed -i \"/MCU_FW_VERSION=/d\" /etc/os-release");
+	system(buf);
+	SYNC;
 	return 0;
 }
 
@@ -694,7 +711,7 @@ int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			disable_join();
 			//system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
 			if(access("/home/root/music/join_gateway_fail.mp3", F_OK) == 0)
-				play_music("/home/root/music/join_gateway_fail.mp3", 0.3);
+				play_music("/home/root/music/join_zigbee_fail.mp3", 0.3);
 			cout << "Join fail\n" << endl;
 			break;
 		}
@@ -711,21 +728,21 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	uint64_t sid;
 	int short_id;
 	
-	sprintf(dev_buf, ZIG_DEV_CONF, _argv[1]);
+	//sprintf(dev_buf, ZIG_DEV_CONF, _argv[1]);
 	//cout << "dev_buf:" << dev_buf << endl;
-	if(access(dev_buf, F_OK) == 0){
-		ifstream zig_dev(dev_buf);
-		if(zig_dev.is_open()){
-			zig_dev.getline(buf, MAXBUF);
+	if(access(ZIG_DEV_CONF, F_OK) == 0){
+	//	ifstream zig_dev(dev_buf);
+	//	if(zig_dev.is_open()){
+	//		zig_dev.getline(buf, MAXBUF);
 			//cout << buf << endl;
-			json msg = json::parse(buf);
-			short_id = GetJsonValueInt(msg, "short_id");
-			string _sid = GetJsonValueString(msg, "sid");
-			sid = sid_str_2_uint64(_sid);
-			zig_dev.close();
-			remove(dev_buf);
+	//		json msg = json::parse(buf);
+	//		short_id = GetJsonValueInt(msg, "short_id");
+	//		string _sid = GetJsonValueString(msg, "sid");
+	//		sid = sid_str_2_uint64(_sid);
+	//		zig_dev.close();
+			remove(ZIG_DEV_CONF);
 			SYNC;
-			remove_zigbee_device(short_id, sid);
+	//		remove_zigbee_device(short_id, sid);
 			if(play_music_flag == false){
 				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
 					play_music("/home/root/music/deleted.mp3", 0.3);
@@ -733,7 +750,7 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 				cout << "Remove success" << endl;
 				play_music_flag = true;
 			}
-		}
+	//	}
 	}
 	//remove_zigbee_device(short_id, sid);
 	else
@@ -797,7 +814,8 @@ int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 int zig_device(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
 	//printf("Device ID:\n");
-	system("cat /home/root/fac/158*.conf | cut -d ',' -f 2-3 | cut -d \"\\\"\" -f 4,8 | tr '\"' ':'");
+	//system("cat /home/root/fac/158*.conf | cut -d ',' -f 2-3 | cut -d \"\\\"\" -f 4,8 | tr '\"' ':'");
+	system("/home/root/fac/device.sh");
 	return 0;
 }
 

@@ -154,6 +154,7 @@ unsigned char set_dongle_current_channel(unsigned char channel)
 void on_dongle_recv_data(char* data, int len)
 {
 	//if (zigbee != NULL) {
+		cout << "recv" << endl;
 		zigbee.recv_zigbee_data(data, len);
 	//}
 }
