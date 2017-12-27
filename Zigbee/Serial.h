@@ -39,7 +39,7 @@ using nlohmann::json;
 #define TIME_OUT 20 // 20 ms
 
 #define ZIG_DEV_CONF "/home/root/fac/%s.conf"
-#define DEV_CFG_PATH "/home/root/fac/dev_cfg.conf"
+#define DEV_CFG_PATH "/lumi/conf/dev_cfg.conf"
 
 enum parity
 {
@@ -110,3 +110,5 @@ int cal_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_zig_rf(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int zig_device(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int ParesJsonFromFile(string file_name, json& json_buf);
+

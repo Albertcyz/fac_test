@@ -24,5 +24,5 @@ tar cvf fac.bin ./fac/
 
 if [ $# = 1 ];then
 	echo "Sending..."
-	scp fac.bin albert@"$1":/home/albert
+	scp fac_test root@"$1":/home/root/fac
 fi

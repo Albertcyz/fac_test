@@ -789,6 +789,11 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 					event = string("click");
 				else if(pv ==2)
 					event = string("double_click");
+				else if(pv == 3){
+					event = string("third_click");
+					cout << "Enter pro test" << endl;
+					pro_test_flag = true;
+				}
 				break;
 
 			case LUMI_SENSOR_86SWITCH2:
@@ -808,6 +813,11 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 					}
 				else if(pv ==2)
 					event = string("double_click");
+				else if(pv == 3){
+					event = string("third_click");
+					cout << "Enter pro test" << endl;
+					pro_test_flag = true;
+				}
 				break;
 
 			case LUMI_SWITCH_AQ:
@@ -818,6 +828,11 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 					event = string("click");
 				else if(pv ==2)
 					event = string("double_click");
+				else if(pv == 3){
+					event = string("third_click");
+					cout << "Enter pro test" << endl;
+					pro_test_flag = true;
+				}
 				break;
 
 			case LUMI_MAGNET_AQ:
@@ -837,6 +852,11 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 					event = string("click");
 				else if(pv ==2)
 					event = string("double_click");
+				else if(pv == 3){
+					event = string("third_click");
+					cout << "Enter pro test" << endl;
+					pro_test_flag = true;
+				}
 				break;
 
 			case LUMI_MAGNET_ES:

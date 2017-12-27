@@ -343,6 +343,7 @@ string get_model(int short_id)
 		return model_name;
 	}
 #endif
+#if 0
 	char buf_file[MAXBUF];
 	char buf[MAXBUF];
 	sprintf(buf, "grep -rl %d /home/root/fac/ > /tmp/get_model", short_id);
@@ -368,6 +369,23 @@ string get_model(int short_id)
 				return model;
 			}
 	}
+#endif
+	json json_buf;
+	json::iterator beg, end, i;
+	int size = 0;
+	//int i = 0;
+	
+	ParesJsonFromFile(DEV_CFG_PATH, json_buf);
+	beg = json_buf.begin();
+	end = json_buf.end();
+	for(i = beg; i != end; i++){
+		//cout << *i << endl;
+		if((int)(*i)["0"] == short_id){
+			//cout << (*i)["5"] << endl;
+			return (*i)["5"];
+		}
+	}
+	return "unknow";
 }
 
 

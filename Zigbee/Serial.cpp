@@ -1,4 +1,4 @@
-#include <stdlib.h>
+﻿#include <stdlib.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include "Serial.h"
@@ -10,6 +10,7 @@
 #include "zigbee/zigbee_enum.h"
 //#include "Utility.cpp"
 #include <fstream>
+#include <mutex>
 
 using nlohmann::json;
 
@@ -576,41 +577,73 @@ uint32_t model_zigbee_to_num(const char* model_str)
 	return LUMI_UNKNOW;
 }
 
+static std::mutex file_lock;
+
 int ParesJsonFromFile(string file_name, json& json_buf)
 {
+	//cout << "ParesJsonFromFile" << endl;
 	char buf[MAXBUF] = {0};
+
+	file_lock.lock();
 	ifstream is(file_name.c_str());
-	if(is.is_open()){
+
+	int file_size = 0;
+	int begin = is.tellg();
+	int end = begin;
+	is.seekg(0, ios_base::end);
+	end = is.tellg();
+	file_size = end - begin;
+	
+	if(is.is_open() && file_size > 0){
+		is.seekg(0, ios_base::beg);
 		is.getline(buf, MAXBUF);
-			//cout << buf << endl;
+		//cout << "buf:" << buf << endl;
 		json_buf = json::parse(buf);
 		is.close();
 		//cout << json_buf << endl;
+		file_lock.unlock();
 		return 0;
 	}
-	return -1;
+	file_lock.unlock();
 }
 
-int AddJsonToFile(json &father, uint64_t _sid, int _short_id, int _model_id, string _model)
+int SaveJsontoFile(string file_name, json& json_buf)
+{
+	file_lock.lock();
+	ofstream out;
+	out.open(file_name.c_str(), std::ofstream::out | std::ofstream::trunc);
+	if(out.is_open()){
+		out << json_buf << endl;
+		out.close();
+	}
+	file_lock.unlock();
+}
+
+int AddJson(json &father, uint64_t _sid, int _short_id, int _model_id, string _model)
 {
 	//sid, short_id, model_id, model.c_str()
 	ostringstream sid;
 	sid << _sid;
 	father[sid.str()] = {
-		{
-			sid.str(),{
 				{"0",_short_id},
 				{"1",_model_id},
 				{"2",0},
 				{"3",0},
 				{"4",0},
 				{"5",_model.c_str()}
-			}
-		}
 	};
-	cout << "father:" << father << endl;
+	//cout << "father:" << father << endl;
 	//father.insert(device.begin(), device.end());
 	//cout << father << endl;
+}
+
+int RemoveJson(json &father, uint64_t _sid)
+{
+	ostringstream sid;
+	sid << _sid;
+	if(!father.is_null()){
+		father.erase(sid.str());
+	}
 }
 
 void  on_zig_report(string message)
@@ -648,47 +681,54 @@ void  on_zig_report(string message)
 		exit_func = true;
 		disable_join();
 		//cout << "short_id:" << short_id << endl;
-		//cout << "device_id:" << _sid << endl;
+		cout << "device_id:" << _sid << endl;
 		//cout << "Join success\n" << endl;
 		//sprintf(buf, "echo %d %lld > %s", short_id, _sid, ZIG_DEV_BUF);
 		//system(buf);
 		//char buf[MAXBUF];
-		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
+		//sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
 		//cout << buf << endl;
-		ofstream zig_dev(buf);
-		if(zig_dev.is_open()){
-			zig_dev << message << endl;
-		}
-		zig_dev.close();
-		SYNC;
-		cout << "device_id:" << _sid << endl;
-		sprintf(buf, "echo \"{\\\"%lld\\\":{\\\"0\\\":%d,\\\"1\\\":%d,\\\"2\\\":0,\\\"3\\\":0,\\\"4\\\":0,\\\"5\\\":\\\"%s\\\"}}\" > /lumi/conf/dev_cfg.conf", 
-				sid, short_id, model_id, model.c_str());
+		//ofstream zig_dev(buf);
+		//if(zig_dev.is_open()){
+		//	zig_dev << message << endl;
+		//}
+		//zig_dev.close();
+		//SYNC;
+		//cout << "device_id:" << _sid << endl;
+		//sprintf(buf, "echo \"{\\\"%lld\\\":{\\\"0\\\":%d,\\\"1\\\":%d,\\\"2\\\":0,\\\"3\\\":0,\\\"4\\\":0,\\\"5\\\":\\\"%s\\\"}}\" > /lumi/conf/dev_cfg.conf", 
+		//		sid, short_id, model_id, model.c_str());
 		//printf("%s\n", buf);
-		system(buf);
-		//json j_buf;
-		//ParesJsonFromFile(DEV_CFG_PATH, j_buf);
+		//system(buf);
+		json j_buf;
+		ParesJsonFromFile(DEV_CFG_PATH, j_buf);
 		//cout << "j_buf" << j_buf << endl;
-		//AddJsonToFile(j_buf, sid, short_id, model_id, model);
+		AddJson(j_buf, sid, short_id, model_id, model);
+		SaveJsontoFile(DEV_CFG_PATH, j_buf);
+		//cout << "j_buf" << j_buf << endl;
 		SYNC;
 	}
-	if(cmd == "remove_device"){
-		//system("gst-launch-1.0 playbin uri=file://////home//root//music//deleted.mp3 volume=0.1 > //tmp//music");
-		if(play_music_flag == true){
-			play_music_flag = false;
+	if(cmd == "remove_device" && play_music_flag == true){
+		//cout << "1111111" << endl;
+		play_music_flag = false;
+		return;
+	}
+	if(cmd == "remove_device" && play_music_flag == false){
+		if(access("/home/root/music/deleted.mp3", F_OK) == 0){
+			play_music("/home/root/music/deleted.mp3", 1);
+			play_music_flag = true;
 		}
-		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
-		if(access(ZIG_DEV_CONF, F_OK) == 0){
-			remove(ZIG_DEV_CONF);
-			remove("/lumi/conf/dev_cfg.conf");
-			SYNC;
-			cout << "Remove success" << endl;
-			if(play_music_flag == false){
-				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
-					play_music("/home/root/music/deleted.mp3", 1);
-				play_music_flag = true;
-			}
-		}
+
+		//cout << "play_music_flag:" << play_music_flag << endl;
+		
+		json j_buf;
+		ParesJsonFromFile(DEV_CFG_PATH, j_buf);
+		//cout << "j_buf" << j_buf << endl;
+		RemoveJson(j_buf, sid);
+		SaveJsontoFile(DEV_CFG_PATH, j_buf);
+		SYNC;
+		
+		cout << "Remove success" << endl;
+		//usleep(3000*1000);
 	}
 }
 string get_model_from_manage(int short_id)
@@ -769,34 +809,21 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	char buf[MAXBUF];
 	uint64_t sid;
 	int short_id;
+	json j_buf;
+	ostringstream str_sid;
 	
-	//sprintf(dev_buf, ZIG_DEV_CONF, _argv[1]);
-	//cout << "dev_buf:" << dev_buf << endl;
-	if(access(ZIG_DEV_CONF, F_OK) == 0){
-	//	ifstream zig_dev(dev_buf);
-	//	if(zig_dev.is_open()){
-	//		zig_dev.getline(buf, MAXBUF);
-			//cout << buf << endl;
-	//		json msg = json::parse(buf);
-	//		short_id = GetJsonValueInt(msg, "short_id");
-	//		string _sid = GetJsonValueString(msg, "sid");
-	//		sid = sid_str_2_uint64(_sid);
-	//		zig_dev.close();
-			remove(ZIG_DEV_CONF);
-			SYNC;
-	//		remove_zigbee_device(short_id, sid);
-			if(play_music_flag == false){
-				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
-					play_music("/home/root/music/deleted.mp3", 1);
-				usleep(1000*1000);
-				cout << "Remove success" << endl;
-				play_music_flag = true;
-			}
-	//	}
-	}
-	//remove_zigbee_device(short_id, sid);
-	else
-		cout << "Remove fail" << endl;
+	string _sid(_argv[1]);
+	sid = sid_str_2_uint64(_sid);
+	str_sid << sid;
+	
+	ParesJsonFromFile(DEV_CFG_PATH, j_buf);
+	short_id = j_buf[str_sid.str()]["0"];
+	//cout << short_id << endl;
+	remove_zigbee_device(short_id, sid);
+	//RemoveJson(j_buf, sid);
+	//SaveJsontoFile(DEV_CFG_PATH, j_buf);
+	SYNC;
+	usleep(3000*1000);
 }
 
 int get_zig_temperature(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
