@@ -31,6 +31,7 @@ if [ $# == 1 ];then
 	/home/root/iot_jp -s /dev/ttymxc1 -f $1
 fi
 
+echo 0 > /sys/class/gpio/gpio40/value
 echo in > /sys/class/gpio/gpio40/direction
 
 echo 0 > /sys/class/gpio/gpio41/value

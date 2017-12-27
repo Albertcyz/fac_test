@@ -39,6 +39,7 @@ using nlohmann::json;
 #define TIME_OUT 20 // 20 ms
 
 #define ZIG_DEV_CONF "/home/root/fac/%s.conf"
+#define DEV_CFG_PATH "/home/root/fac/dev_cfg.conf"
 
 enum parity
 {

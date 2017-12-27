@@ -39,6 +39,7 @@ int test_speaker(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_speaker_udp(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_key(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int m_play(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int test_mfi(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 int exit_test(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int test_ok(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
@@ -54,5 +55,8 @@ int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 int set_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 int get_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+
+int set_language(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
+int set_hk_model(cmd_tbl_s *_cmd, int _argc, char *const _argv[]);
 
 #endif

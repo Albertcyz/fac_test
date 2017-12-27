@@ -323,6 +323,8 @@ void cat_char(char *recv_buf, char *restore_buf, int recv_len, int restore_len)
 #define RECE_BUFFER_LENGTH 1024
 int ZigbeeProto::recv_zigbee_data(char *recv_buf, int recv_len)
 {
+	//cout << "recv_zigbee_data" << endl;
+	//cout << "recv_buf:" << recv_buf << endl;
 	uint8_t u8Data;
 	//uint8_t u8CRC;
 	uint16_t i;
@@ -756,8 +758,9 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 				else if(pv ==2)
 					event = string("double_click");
 				else if(pv == 3){
-					//cout << "Enter pro test" << endl;
-					//pro_test_flag = true;
+					event = string("third_click");
+					cout << "Enter pro test" << endl;
+					pro_test_flag = true;
 				}
 				break;
 
@@ -851,9 +854,12 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 
 		
 	}
-
+	//cout << "if ((!model_name_inReport.empty())&&(!event.empty())):" << !model_name_inReport.empty() 
+	//	<< ' ' << !event.empty() << endl;
 	if ((!model_name_inReport.empty())&&(!event.empty()))
+	//if (!model_name_inReport.empty())
 	{
+		//cout << "Report_for_Us:" << endl;
 		if (Report_for_Us)
 		{
 			snprintf(buf, sizeof(buf), "{\"cmd\":\"report\",\"model\":\"%s\",\"sid\":\"%llx\",\"short_id\":%d,\"token\":\"%d\",\"data\":\"{\\\"%s\\\":\\\"%s\\\"}\"}",//source
@@ -865,7 +871,7 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 		     	model_name_inReport.c_str(),(long long unsigned int)sid, short_id,get_report_instance(),event_type_inReport.c_str(),event.c_str());
 		}
 	
-			
+		//cout << "before on report" << endl;
 		on_report(buf, strlen(buf));
 	}
 	
@@ -878,23 +884,21 @@ void report_onoff_sensor_status(uint8_t *data, int len)
 //General on/off cluster ID is 0x0006
 void report_onoff_status(uint8_t *data, int len)
 {
+	//cout << "report_onoff_status" << endl;
+
 	uint16_t short_id = (uint16_t)get_zigbee_uint16(&data[1]);
 	
 	string model_name = get_model(short_id);
 	
 	string device_type = get_device_type(model_name);
 
+	int pv = data[10];
+
 	if (device_type == "controller")
 		report_onoff_controller_status(data, len);
 	else 
 		report_onoff_sensor_status(data, len);
 	
-	int pv = data[10];
-
-	if(pv == 3){
-		cout << "Enter pro test" << endl;
-		pro_test_flag = true;
-	}
 #if 0	
 	uint32_t attrId = get_zigbee_uint16(&data[7]);
 	
@@ -1873,16 +1877,17 @@ void report_uncognized_cluster_status(uint8_t *data, int len)
 int ZigbeeProto::parse_attribe_pv_report(uint16_t type, uint8_t *data, int len)
 {
 
+	//cout << "ZigbeeProto::parse_attribe_pv_report" << endl;
 	uint32_t u32ClusterID = get_zigbee_uint16(&data[5]);
-
+	
 	uint16_t short_id = (uint16_t)get_zigbee_uint16(&data[1]);
 	
 	string model_name = get_model(short_id);
 	
 	string device_type = get_device_type(model_name);
-
+	
 	int pv = data[10];
-
+	
 	char buf[300] = {0};
 	
 	if (0 != strcmp(model_name.c_str(),"unknow"))
@@ -4543,6 +4548,7 @@ int reset_ota_timer(uint8_t* data);
 
 int ZigbeeProto::parse(uint16_t type, uint8_t *data, int len)
 {
+	//cout << "ZigbeeProto::parse" << endl;
 	//uint32_t u32Temp = 0;
 	//unsigned int u32short_id = 0;
 	//uint64_t sid = 0;

@@ -122,7 +122,9 @@ int play_music(char *music_name, float volume)
 		return -1;
 	if(volume > 1 || volume < 0)
 		volume = 0;
-	sprintf(name, "gst-launch-1.0 playbin uri=file:///%s volume=%f gst-debug-level=0 &> /tmp/music &", \
+	//sprintf(name, "gst-launch-1.0 playbin uri=file:///%s volume=%f gst-debug-level=0 &> /tmp/music &", \
+	//		music_name, volume);
+	sprintf(name, "nohup gst-play-1.0 %s --volume=%f 2>/dev/null &", \
 			music_name, volume);
 	system(name);
 	return 0;
@@ -132,7 +134,7 @@ int play_music(char *music_name, float volume)
 //Test speaker
 int test_speaker(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	play_music("/home/root/fac/1khz.wav", 0.3);
+	play_music("/home/root/fac/1khz.wav", 1);
 	printf("Playing OK\n");
 
 	return 0;
@@ -334,7 +336,8 @@ int reboot(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 
 int version(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 {
-	system("cat /etc/os-release | grep LUMI_VERSION | cut -d '=' -f 2");
+	system("cat /etc/os-release | grep LUMI_VERSION | tr '=' ':'");
+	system("cat /etc/os-release | grep LUMI_HOMEKIT_VERSION | tr '=' ':'");
 }
 
 #if 0
@@ -398,7 +401,7 @@ int get_setup_code(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	if(fd > 0){
 		printf("setup code:");
 		while(read(fd, &buf, sizeof(char)) > 0){
-			printf("%02x", buf);
+			printf("%c", buf);
 		}
 		printf("\n");
 		close(fd);
@@ -436,6 +439,55 @@ int get_mi_did(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	char buf[MAXBUF] = {0};
 	sprintf(buf, "cat %s", DID_FILE);
 	system(buf);
+}
+
+
+int test_mfi(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	system("/home/root/fac/mfi_test");
+}
+
+int set_language(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	if (_argv[1] == NULL){
+		printf("Usage:set_language language\n");
+		return -1;
+	}
+	char buf[MAXBUF] = {0};
+	sprintf(buf, "%s", _argv[1]);
+	if(strcasecmp(buf, "chinese") == 0){
+		system("/home/root/hkbridge/set_default_language_Chinese");
+		printf("set %s ok\n", buf);
+	}
+	else if(strcasecmp(buf, "english") == 0){
+		system("/home/root/hkbridge/set_default_language_English");
+		printf("set %s ok\n", buf);
+	}
+	else{
+		printf("set language fail\n");
+	}
+	return 0;
+}
+
+int set_hk_model(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
+{
+	if (_argv[1] == NULL){
+		printf("Usage:set_hk_firmware model\n");
+		return -1;
+	}
+	if(access("/tmp/tar_ok", F_OK) != 0){
+		printf("Please try again!\n");
+		return -1;
+	}
+	printf("Setting...\n");
+	char buf[MAXBUF] = {0};
+	//sprintf(buf, "cp %s /tmp/hk_update");
+	//system(buf);
+	//memset(buf, 0, MAXBUF);
+	sprintf(buf, "cd /tmp/lumi_hub.update && sed -i 's/reboot/#reboot/g' update.sh && ./update.sh %s 2>/dev/null", _argv[1]);
+	system(buf);
+	//system("pwd && cd - && pwd");
+	printf("Success\n");
 }
 
 

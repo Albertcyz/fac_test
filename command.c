@@ -76,6 +76,7 @@ void cmd_init_uart(void)
 	add_to_cmd_list("speaker", 2, test_speaker, "Play 1khz sinusoidal sound.");
 	add_to_cmd_list("key", 2, test_key, "Test key.");
 	add_to_cmd_list("m_play", 3, m_play, "Play music.Usage : m_play name volume.");
+	add_to_cmd_list("test_mfi", 3, test_mfi, "Test the mfi chip.");
 	add_to_cmd_list("cmd_chk_zig", 2, zig_ver, "Test the zigbee chip communication, return zigbee chip firmware version");
 	add_to_cmd_list("join", 2, zig_join, "Zigbee join.");
 	add_to_cmd_list("remove", 3, zig_remove, "remove device.");
@@ -93,6 +94,8 @@ void cmd_init_uart(void)
 	add_to_cmd_list("set_hd_ver", 2, set_hd_ver, "Set hardware version,usage:set_hd_ver 123.");
 	add_to_cmd_list("get_hd_ver", 2, get_hd_ver, "Get hardware version.");
 	add_to_cmd_list("setup_code", 2, setup_code, "Set homekit setup code.");
+	add_to_cmd_list("set_language", 2, set_language, "Set homekit language.");
+	add_to_cmd_list("set_hk_model", 2, set_hk_model, "Set homekit model.");
 	add_to_cmd_list("get_setup_code", 2, get_setup_code, "get homekit setup code.");
 	add_to_cmd_list("set_did", 7, set_mi_did, "set mi did key mac model.");
 	add_to_cmd_list("get_did", 2, get_mi_did, "get mi did key mac model.");
@@ -337,6 +340,7 @@ int key_enter_test()
 			}
 			if((!_timer2.end()) && (key_count == 5)){
 				char buf[MAXBUF] = {0};
+				system("/etc/init.d/dropbear start");
 				sprintf(buf, "/home/root/fac/wifi_ap %s", wifi_ap_interface);
 				system(buf);
 				while(1){
@@ -391,7 +395,7 @@ void *key_exit(void *arg)
 							allow_join_in_factory_mode();
 							test_rgb_white(NULL, 0, NULL);
 							if(access("/home/root/music/add_sensor.mp3", F_OK) == 0)
-								play_music("/home/root/music/add_sensor.mp3", 0.2);
+								play_music("/home/root/music/add_sensor.mp3", 1);
 						}
 						break;
 					}
@@ -459,7 +463,7 @@ void *enter_pcba_test(void *arg)
 	pcba_test_flag = true;
 	cmd_init_uart();
 		//usleep(1000*1000);
-	init_zigbee();
+	//init_zigbee();
 
 	get_network();
 
@@ -550,6 +554,8 @@ void *enter_pro_test(void *arg)
 
 #if 1
 
+#define UPDATE_NAME "/home/root/fac/lumi_hub.update.bin_v2.0.1"
+
 int main()
 {
 	printf("fac_test bulid time:%s %s\r\n", __TIME__, __DATE__);
@@ -585,7 +591,13 @@ int main()
 			run_cmd(find_cmd(&gobal_pares_cmd_argv), &gobal_pares_cmd_argv);
 		}
 		*/
-		//init_zigbee();
+		init_zigbee();
+		if(access(UPDATE_NAME, F_OK) == 0){
+			char tmp[MAXBUF] = {0};
+			sprintf(tmp, "cp %s /tmp/hk_update && cd /tmp && tar jxf hk_update 2>/dev/null && touch /tmp/tar_ok &", UPDATE_NAME);
+			system(tmp);
+			//system("cd /tmp && tar jxf hk_update 2>/dev/null && touch /tmp/tar_ok &");
+		}
 		pthread_t enter_pcba_id;
 		pthread_t enter_pro_id;
 		pthread_t led_blink_id;
@@ -601,8 +613,9 @@ int main()
 				pthread_cancel(enter_pcba_id);
 				pcba_test_flag = false;
 				usleep(100*1000);
-				exit_zig_com = false;
+				//exit_zig_com = false;
 				//pthread_create(&enter_pro_id, NULL, enter_pro_test, NULL);
+				test_rgb_close(NULL, 0, NULL);
 				system("touch /lumi/conf/factory_add_scene");
 				system("echo ssid=\\\"aq_hub_miio_default\\\" > /lumi/conf/wifi.conf");
 				system("echo psk=\\\"123456789\\\" >> /lumi/conf/wifi.conf");

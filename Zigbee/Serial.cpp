@@ -576,10 +576,46 @@ uint32_t model_zigbee_to_num(const char* model_str)
 	return LUMI_UNKNOW;
 }
 
+int ParesJsonFromFile(string file_name, json& json_buf)
+{
+	char buf[MAXBUF] = {0};
+	ifstream is(file_name.c_str());
+	if(is.is_open()){
+		is.getline(buf, MAXBUF);
+			//cout << buf << endl;
+		json_buf = json::parse(buf);
+		is.close();
+		//cout << json_buf << endl;
+		return 0;
+	}
+	return -1;
+}
+
+int AddJsonToFile(json &father, uint64_t _sid, int _short_id, int _model_id, string _model)
+{
+	//sid, short_id, model_id, model.c_str()
+	ostringstream sid;
+	sid << _sid;
+	father[sid.str()] = {
+		{
+			sid.str(),{
+				{"0",_short_id},
+				{"1",_model_id},
+				{"2",0},
+				{"3",0},
+				{"4",0},
+				{"5",_model.c_str()}
+			}
+		}
+	};
+	cout << "father:" << father << endl;
+	//father.insert(device.begin(), device.end());
+	//cout << father << endl;
+}
 
 void  on_zig_report(string message)
 {
-	cout << message << endl;
+	//cout << message << endl;
 	json msg = json::parse(message.c_str());
 	
 	string cmd = GetJsonValueString(msg, "cmd");
@@ -604,10 +640,10 @@ void  on_zig_report(string message)
 	if(cmd == "zigbee_join"){
 		//system("gst-launch-1.0 playbin uri=file://////home//root//music//add_ok.mp3 volume=0.1 > //tmp//music");
 		if(access("/home/root/music/add_ok.mp3", F_OK) == 0){
-			play_music("/home/root/music/add_ok.mp3", 0.3);
+			play_music("/home/root/music/add_ok.mp3", 1);
 		}
 		else{
-			play_music("/home/root/music/join_success.mp3", 0.3);
+			play_music("/home/root/music/join_success.mp3", 1);
 		}
 		exit_func = true;
 		disable_join();
@@ -630,6 +666,10 @@ void  on_zig_report(string message)
 				sid, short_id, model_id, model.c_str());
 		//printf("%s\n", buf);
 		system(buf);
+		//json j_buf;
+		//ParesJsonFromFile(DEV_CFG_PATH, j_buf);
+		//cout << "j_buf" << j_buf << endl;
+		//AddJsonToFile(j_buf, sid, short_id, model_id, model);
 		SYNC;
 	}
 	if(cmd == "remove_device"){
@@ -637,14 +677,15 @@ void  on_zig_report(string message)
 		if(play_music_flag == true){
 			play_music_flag = false;
 		}
-		//sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
+		sprintf(buf, ZIG_DEV_CONF, _sid.c_str());
 		if(access(ZIG_DEV_CONF, F_OK) == 0){
 			remove(ZIG_DEV_CONF);
+			remove("/lumi/conf/dev_cfg.conf");
 			SYNC;
 			cout << "Remove success" << endl;
 			if(play_music_flag == false){
 				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
-					play_music("/home/root/music/deleted.mp3", 0.3);
+					play_music("/home/root/music/deleted.mp3", 1);
 				play_music_flag = true;
 			}
 		}
@@ -673,7 +714,8 @@ void init_zigbee()
 	//system("/home/root/fac/test_ota > /tmp/zig_ota");
 
 	//usleep(1000*1000);
-
+	//cout << "init_zigbee" << endl;
+	
 	init_com(on_zigbee_recv_data);
 	open_zigbee(on_zig_report, get_model_from_manage, get_short_id_from_manage, get_device_id_from_manage, on_send_data_to_zigbee);
 }
@@ -711,7 +753,7 @@ int zig_join(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 			disable_join();
 			//system("gst-launch-1.0 playbin uri=file://////home//root//music//join_gateway_fail.mp3 volume=0.3 > //tmp//music");
 			if(access("/home/root/music/join_gateway_fail.mp3", F_OK) == 0)
-				play_music("/home/root/music/join_zigbee_fail.mp3", 0.3);
+				play_music("/home/root/music/join_zigbee_fail.mp3", 1);
 			cout << "Join fail\n" << endl;
 			break;
 		}
@@ -745,7 +787,7 @@ int zig_remove(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 	//		remove_zigbee_device(short_id, sid);
 			if(play_music_flag == false){
 				if(access("/home/root/music/deleted.mp3", F_OK) == 0)
-					play_music("/home/root/music/deleted.mp3", 0.3);
+					play_music("/home/root/music/deleted.mp3", 1);
 				usleep(1000*1000);
 				cout << "Remove success" << endl;
 				play_music_flag = true;
@@ -800,7 +842,9 @@ int test_zig_ota(cmd_tbl_s *_cmd, int _argc, char *const _argv[])
 		if(zig_com_status == false){
 			usleep(500*1000);
 			if(zig_com_status == false){
-				system("/home/root/fac/test_ota");
+				system("/home/root/fac/test_ota > /lumi/conf/test_ota_result");
+				system("cat /lumi/conf/test_ota_result");
+				system("sed -i 's/MAC Address: //g' /lumi/conf/test_ota_result");
 				exit_zig_com = false;
 				init_com(on_zigbee_recv_data);
 				usleep(1000*1000);
